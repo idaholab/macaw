@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<settings>
+  <run_mode>eigenvalue</run_mode>
+  <particles>10</particles>
+  <batches>10000</batches>
+  <inactive>100</inactive>
+  <generations_per_batch>1</generations_per_batch>
+  <source strength="1.0">
+    <space type="fission">
+      <parameters>-9.2075 -9.2075 -20 9.2075 9.2075 -15</parameters>
+    </space>
+  </source>
+  <output>
+    <tallies>false</tallies>
+  </output>
+  <state_point>
+    <batches>110 500 700 1000 1300 1600 2000 2500 3000 4000 5000 7000 8000 9000 10000 15000 20000 50000 100000</batches>
+  </state_point>
+</settings>

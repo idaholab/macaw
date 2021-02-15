@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<materials>
+  <material id="1">
+    <density units="g/cm3" value="1.662" />
+    <nuclide ao="1.0" name="C0" />
+    <sab name="c_Graphite" />
+  </material>
+  <material id="2">
+    <density units="g/cm3" value="0.001205" />
+    <nuclide ao="0.00015" name="C0" />
+    <nuclide ao="0.784431" name="N14" />
+    <nuclide ao="0.210748" name="O16" />
+    <nuclide ao="0.0046524794849999995" name="Ar40" />
+  </material>
+  <material depletable="true" id="3">
+    <density units="g/cm3" value="19.1" />
+    <nuclide ao="0.00711" name="U235" />
+    <nuclide ao="0.99284" name="U238" />
+  </material>
+  <material id="4">
+    <density units="g/cm3" value="2.7" />
+    <nuclide ao="1.0" name="Al27" />
+  </material>
+  <material id="5">
+    <density units="g/cm3" value="7.31" />
+    <nuclide ao="0.04281" name="In113" />
+    <nuclide ao="0.95719" name="In115" />
+  </material>
+  <material id="7">
+    <density units="g/cm3" value="2.3" />
+    <nuclide ao="0.30533" name="H1" />
+    <nuclide ao="0.00288" name="C0" />
+    <nuclide ao="0.500407" name="O16" />
+    <nuclide ao="0.009212" name="Na23" />
+    <nuclide ao="0.019953" name="Al27" />
+    <nuclide ao="0.2809472843256" name="Si28" />
+    <nuclide ao="0.0094040141772" name="Si30" />
+    <nuclide ao="0.009367776145" name="K39" />
+    <nuclide ao="0.04163712891" name="Ca40" />
+    <nuclide ao="0.0059043699" name="Fe56" />
+  </material>
+  <material id="8">
+    <density units="g/cm3" value="0.000650426074815849" />
+    <nuclide ao="0.99" name="He3" />
+    <nuclide ao="0.01" name="He4" />
+  </material>
+</materials>

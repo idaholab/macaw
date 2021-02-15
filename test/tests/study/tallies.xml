@@ -1,0 +1,121 @@
+<?xml version='1.0' encoding='utf-8'?>
+<tallies>
+  <!--Detailed Mesh-->
+  <mesh id="1">
+    <dimension>12 12 1</dimension>
+    <lower_left>-9.2075 -9.2075 -20</lower_left>
+    <upper_right>9.2075 9.2075 -15</upper_right>
+  </mesh>
+  <filter id="1" type="mesh">
+    <bins>1</bins>
+  </filter>
+  <filter id="5" type="material">
+    <bins>3</bins>
+  </filter>
+  <filter id="4" type="energy">
+    <bins>0.0 0.03 0.058 0.14 0.28 0.35 0.625 0.972 1.02 1.097 1.15 1.855 4.0 9.877 15.968 148.73 5530.0 9118.0 111000.0 500000.0 821000.0 1353000.0 2231000.0 3679000.0 6065500.0 20000000.0</bins>
+  </filter>
+  <filter id="8" type="cellfrom">
+    <bins>9</bins>
+  </filter>
+  <filter id="9" type="cell">
+    <bins>10</bins>
+  </filter>
+  <filter id="3" type="legendre">
+    <order>10</order>
+    <angle>polar</angle>
+  </filter>
+  <filter id="10" type="cellfrom">
+    <bins>10</bins>
+  </filter>
+  <filter id="11" type="cell">
+    <bins>9</bins>
+  </filter>
+  <filter id="225" type="cell">
+    <bins>9 10 12 14 48</bins>
+  </filter>
+  <filter id="20" type="energy">
+    <bins>0.0 20000000.0</bins>
+  </filter>
+  <filter id="19" type="energyout">
+    <bins>0.0 0.03 0.058 0.14 0.28 0.35 0.625 0.972 1.02 1.097 1.15 1.855 4.0 9.877 15.968 148.73 5530.0 9118.0 111000.0 500000.0 821000.0 1353000.0 2231000.0 3679000.0 6065500.0 20000000.0</bins>
+  </filter>
+  <filter id="24" type="legendre">
+    <order>0</order>
+    <angle>mu</angle>
+  </filter>
+  <filter id="25" type="legendre">
+    <order>1</order>
+    <angle>mu</angle>
+  </filter>
+  <tally id="1" name="all">
+    <filters>1</filters>
+    <scores>flux nu-fission fission absorption</scores>
+  </tally>
+  <tally id="2" name="U238abs">
+    <filters>5 4</filters>
+    <nuclides>U238</nuclides>
+    <scores>absorption</scores>
+  </tally>
+  <tally id="3" name="fuel-fluxes">
+    <filters>5 4</filters>
+    <scores>flux</scores>
+  </tally>
+  <tally id="4" name="U238RR">
+    <filters>1</filters>
+    <nuclides>U238</nuclides>
+    <scores>absorption</scores>
+  </tally>
+  <tally id="7" name="9-10">
+    <filters>8 9 4 3</filters>
+    <scores>current</scores>
+    <estimator>analog</estimator>
+  </tally>
+  <tally id="8" name="10-9">
+    <filters>10 11 4 3</filters>
+    <scores>current</scores>
+    <estimator>analog</estimator>
+  </tally>
+  <tally id="239">
+    <filters>225 4</filters>
+    <nuclides>total</nuclides>
+    <scores>flux total nu-fission fission scatter absorption</scores>
+    <estimator>tracklength</estimator>
+  </tally>
+  <tally id="208">
+    <filters>225 20</filters>
+    <nuclides>total</nuclides>
+    <scores>nu-fission</scores>
+    <estimator>analog</estimator>
+  </tally>
+  <tally id="209">
+    <filters>225 19</filters>
+    <nuclides>total</nuclides>
+    <scores>nu-fission</scores>
+    <estimator>analog</estimator>
+  </tally>
+  <tally id="218">
+    <filters>225 4 19 24</filters>
+    <nuclides>total</nuclides>
+    <scores>scatter</scores>
+    <estimator>analog</estimator>
+  </tally>
+  <tally id="219">
+    <filters>225 4 19</filters>
+    <nuclides>total</nuclides>
+    <scores>nu-scatter</scores>
+    <estimator>analog</estimator>
+  </tally>
+  <tally id="241">
+    <filters>225 19 25</filters>
+    <nuclides>total</nuclides>
+    <scores>nu-scatter scatter</scores>
+    <estimator>analog</estimator>
+  </tally>
+  <tally id="240">
+    <filters>225 4</filters>
+    <nuclides>total</nuclides>
+    <scores>flux</scores>
+    <estimator>analog</estimator>
+  </tally>
+</tallies>
