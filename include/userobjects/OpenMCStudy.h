@@ -11,25 +11,43 @@
 
 // MOOSE includes
 #include "RayTracingStudy.h"
+#include "ClaimRays.h"
 
 // openmc includes
-#include "openmc/capi.h"
+
 
 /**
- * Class to use the Monte Carlo method for neutron transport
- *
+ * Class to use the Monte Carlo method for neutron transport. Wraps OpenMC function
+ * calls for initialization
  */
 class OpenMCStudy : public RayTracingStudy
 {
 public:
   OpenMCStudy(const InputParameters & parameters);
+  ~OpenMCStudy();
 
   static InputParameters validParams();
 
 protected:
 
-  void generateRays();
-
 private:
+  void meshChanged() override;
+  void generateRays() override;
 
+  //TODO Delete if they only provide a timer
+  void claimRaysInternal();
+  void defineRaysInternal();
+
+  void defineRays();
+
+  /// Vector of Rays that the user will fill into in defineRays() (restartable)
+  std::vector<std::shared_ptr<Ray>> & _rays;
+
+  /// The object used to claim Rays
+  ClaimRays _claim_rays;
+
+  /// Timing for claiming rays
+  PerfID _claim_rays_timer;
+  /// Timing for defining rays
+  PerfID _define_rays_timer;
 };
