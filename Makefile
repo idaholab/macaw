@@ -9,7 +9,7 @@
 #       -Find how to link libopenmc without LD_LIBRARY_PATH (-Wl,-rpath?)
 # ======================================================================================
 MACAW_DIR       := $(abspath $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
-CONTRIB_DIR     := $(MACAW_DIR)/contrib
+CONTRIB_DIR     := $(MACAW_DIR)
 MOOSE_SUBMODULE ?= $(CONTRIB_DIR)/moose
 OPENMC_DIR      ?= $(CONTRIB_DIR)/openmc
 PETSC_DIR       ?= $(MOOSE_SUBMODULE)/petsc

@@ -153,7 +153,7 @@ OpenMCStudy::~OpenMCStudy()
   if (err)
     openmc::fatal_error(openmc_err_msg);
 
-  ~RayTracingStudy();
+  // ~RayTracingStudy();
 }
 
 void OpenMCStudy::generateRays()
@@ -218,14 +218,14 @@ OpenMCStudy::defineRays()
   for (std::size_t i = 0; i < openmc::settings::n_particles; ++i)
   {
     const auto & ray = acquireRay();
-    
+
     //initialize_history(ray, i);
     //ray->setStartingElemen();
     //ray->setDirection();
 
-    moveRayToBuffer(ray);
+    // moveRayToBuffer(ray);
   }
-  
+
 }
 
 // Execute: rewrite openmc_run but plug in the Rays
