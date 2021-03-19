@@ -1,64 +1,17 @@
 <?xml version='1.0' encoding='utf-8'?>
 <geometry>
-  <cell id="9" material="4" name="Clad" region="(362 -360 -356) | (360 -359 355 -356) | (359 -361 -356)" universe="5" />
-  <cell id="10" material="3" name="Fuel" region="360 -359 -355" universe="5" />
-  <cell id="12" material="2" name="Fuel9Air" region="(26 -363 -357) | (364 -27 -357) | (363 -364 356 -357)" universe="16" />
-  <cell id="14" material="1" name="Fuel9Graphite" region="357" universe="16" />
-  <cell fill="14" id="38" name="fuel9" region="363 -364 -356" universe="16" />
-  <cell fill="24" id="44" name="fuelLat" region="394 -395 396 -397 398 -399" universe="29" />
-  <cell id="48" material="1" name="Graphite around fuel matrix" region="~(394 -395 396 -397 398 -399)" universe="29" />
-  <cell fill="29" id="49" name="root cell" region="406 -407 408 -409 404 -405" universe="30" />
-  <lattice id="14">
-    <pitch>2.836 2.836 21.196</pitch>
-    <dimension>1 1 9</dimension>
-    <lower_left>-1.418 -1.418 -95.382</lower_left>
-    <universes>
-5 
-
-5 
-
-5 
-
-5 
-
-5 
-
-5 
-
-5 
-
-5 
-
-5 </universes>
-  </lattice>
-  <lattice id="24">
-    <pitch>18.415 18.415 231.14</pitch>
-    <dimension>1 1 1</dimension>
-    <lower_left>-9.2075 -9.2075 -115.57</lower_left>
-    <universes>
-16 </universes>
-  </lattice>
-  <surface coeffs="-115.57" id="26" type="y-plane" />
-  <surface coeffs="115.57" id="27" type="y-plane" />
-  <surface coeffs="0.0 0.0 1.27" id="355" type="z-cylinder" />
-  <surface coeffs="0.0 0.0 1.418" id="356" type="z-cylinder" />
-  <surface coeffs="0.0 0.0 1.5875" id="357" type="z-cylinder" />
-  <surface coeffs="10.188" id="359" type="z-plane" />
-  <surface coeffs="-10.132" id="360" type="z-plane" />
-  <surface coeffs="10.598" id="361" type="z-plane" />
-  <surface coeffs="-10.598" id="362" type="z-plane" />
-  <surface coeffs="-95.382" id="363" type="z-plane" />
-  <surface coeffs="95.382" id="364" type="z-plane" />
-  <surface coeffs="-110.49" id="394" type="x-plane" />
-  <surface coeffs="110.49" id="395" type="x-plane" />
-  <surface coeffs="-110.49" id="396" type="y-plane" />
-  <surface coeffs="110.49" id="397" type="y-plane" />
-  <surface coeffs="-115.57" id="398" type="z-plane" />
-  <surface coeffs="115.57" id="399" type="z-plane" />
-  <surface boundary="reflective" coeffs="-20" id="404" type="z-plane" />
-  <surface boundary="reflective" coeffs="-15" id="405" type="z-plane" />
-  <surface boundary="reflective" coeffs="-9.2075" id="406" type="x-plane" />
-  <surface boundary="reflective" coeffs="9.2075" id="407" type="x-plane" />
-  <surface boundary="reflective" coeffs="-9.2075" id="408" type="y-plane" />
-  <surface boundary="reflective" coeffs="9.2075" id="409" type="y-plane" />
+  <cell id="1" material="1" name="fuel" region="-1" universe="1" />
+  <cell id="2" material="2" name="gap" region="1 -2" universe="1" />
+  <cell id="3" material="3" name="clad" region="2 -3" universe="1" />
+  <cell id="4" material="4" name="water" region="3" universe="1" />
+  <cell fill="1" id="5" name="root" region="4 -5 6 -7 8 -9" universe="0" />
+  <surface coeffs="0 0 0.39218" id="1" name="Fuel OR" type="z-cylinder" />
+  <surface coeffs="0 0 0.40005" id="2" name="Clad IR" type="z-cylinder" />
+  <surface coeffs="0 0 0.4572" id="3" name="Clad OR" type="z-cylinder" />
+  <surface boundary="reflective" coeffs="-0.62992" id="4" name="min x" type="x-plane" />
+  <surface boundary="reflective" coeffs="0.62992" id="5" name="max x" type="x-plane" />
+  <surface boundary="reflective" coeffs="-0.62992" id="6" name="min y" type="y-plane" />
+  <surface boundary="reflective" coeffs="0.62992" id="7" name="max y" type="y-plane" />
+  <surface boundary="reflective" coeffs="-0.62992" id="8" name="min z" type="z-plane" />
+  <surface boundary="reflective" coeffs="0.62992" id="9" name="max z" type="z-plane" />
 </geometry>

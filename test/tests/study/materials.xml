@@ -1,47 +1,32 @@
 <?xml version='1.0' encoding='utf-8'?>
 <materials>
-  <material id="1">
-    <density units="g/cm3" value="1.662" />
-    <nuclide ao="1.0" name="C0" />
-    <sab name="c_Graphite" />
+  <cross_sections>/Users/giudgl/projects/openmc/data/lib80/cross_sections.xml</cross_sections>
+  <material depletable="true" id="1" name="UO2 Fuel">
+    <density units="g/cm3" value="10.29769" />
+    <nuclide ao="0.00055815" name="U235" />
+    <nuclide ao="0.022408" name="U238" />
+    <nuclide ao="0.045829" name="O16" />
+    <isotropic>U235 U238 O16</isotropic>
   </material>
-  <material id="2">
-    <density units="g/cm3" value="0.001205" />
-    <nuclide ao="0.00015" name="C0" />
-    <nuclide ao="0.784431" name="N14" />
-    <nuclide ao="0.210748" name="O16" />
-    <nuclide ao="0.0046524794849999995" name="Ar40" />
+  <material id="2" name="Helium">
+    <density units="g/cm3" value="0.001598" />
+    <nuclide ao="0.00024044" name="He4" />
+    <isotropic>He4</isotropic>
   </material>
-  <material depletable="true" id="3">
-    <density units="g/cm3" value="19.1" />
-    <nuclide ao="0.00711" name="U235" />
-    <nuclide ao="0.99284" name="U238" />
+  <material id="3" name="Zircaloy 4">
+    <density units="g/cm3" value="6.55" />
+    <nuclide ao="0.00030743" name="O16" />
+    <nuclide ao="0.0001361" name="Fe56" />
+    <nuclide ao="0.021827" name="Zr90" />
+    <isotropic>O16 Fe56 Zr90</isotropic>
   </material>
-  <material id="4">
-    <density units="g/cm3" value="2.7" />
-    <nuclide ao="1.0" name="Al27" />
-  </material>
-  <material id="5">
-    <density units="g/cm3" value="7.31" />
-    <nuclide ao="0.04281" name="In113" />
-    <nuclide ao="0.95719" name="In115" />
-  </material>
-  <material id="7">
-    <density units="g/cm3" value="2.3" />
-    <nuclide ao="0.30533" name="H1" />
-    <nuclide ao="0.00288" name="C0" />
-    <nuclide ao="0.500407" name="O16" />
-    <nuclide ao="0.009212" name="Na23" />
-    <nuclide ao="0.019953" name="Al27" />
-    <nuclide ao="0.2809472843256" name="Si28" />
-    <nuclide ao="0.0094040141772" name="Si30" />
-    <nuclide ao="0.009367776145" name="K39" />
-    <nuclide ao="0.04163712891" name="Ca40" />
-    <nuclide ao="0.0059043699" name="Fe56" />
-  </material>
-  <material id="8">
-    <density units="g/cm3" value="0.000650426074815849" />
-    <nuclide ao="0.99" name="He3" />
-    <nuclide ao="0.01" name="He4" />
+  <material id="4" name="Borated Water">
+    <density units="g/cm3" value="0.740582" />
+    <nuclide ao="8.0042e-06" name="B10" />
+    <nuclide ao="3.2218e-05" name="B11" />
+    <nuclide ao="0.049457" name="H1" />
+    <nuclide ao="0.024672" name="O16" />
+    <sab name="c_H_in_H2O" />
+    <isotropic>B10 B11 H1 O16</isotropic>
   </material>
 </materials>
