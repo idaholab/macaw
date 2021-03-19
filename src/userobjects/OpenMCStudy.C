@@ -23,6 +23,7 @@
 #include "openmc/message_passing.h"
 #include "openmc/particle_restart.h"
 #include "openmc/settings.h"
+#include "openmc/particle.h"
 
 // additional includes if want to decompose initialization
 #include "openmc/simulation.h"
@@ -40,13 +41,19 @@ OpenMCStudy::validParams()
 {
   auto params = RayTracingStudy::validParams();
   params.addClassDescription("Runs OpenMC like a bawsse.");
+
+  // Neutrons dont really need names?
+  params.addPrivateParam<bool>("_use_ray_registration", false);
+
   return params;
 }
 
 OpenMCStudy::OpenMCStudy(const InputParameters & params)
   : RayTracingStudy(params),
   _rays(declareRestartableDataWithContext<std::vector<std::shared_ptr<Ray>>>("rays", this)),
-  _claim_rays(*this, _mesh, _rays, _rays, false),
+  _local_rays(
+      declareRestartableDataWithContext<std::vector<std::shared_ptr<Ray>>>("local_rays", this)),
+  _claim_rays(*this, *parallelStudy(), _mesh, _rays, _local_rays, false),
   _claim_rays_timer(registerTimedSection("claimRays", 1)),
   _define_rays_timer(registerTimedSection("defineRays", 1))
 {
@@ -164,6 +171,19 @@ void OpenMCStudy::generateRays()
   // Assign rays to each process. This is done every time since neutrons keep
   // changing domains. If we do fixed source, we can limit this
   claimRaysInternal();
+
+  //TODO Reinit the elements for the physics
+
+  std::cout << "Local rays size: " << _local_rays.size() << std::endl;
+  // Move the rays to the work buffers
+  for (auto & ray : _local_rays)
+  {
+    //TODO All the resetting because generateRays is called everytime
+    // ray->resetCounters();
+    // ray->clearStartingInfo();
+
+    moveRayToBuffer(ray);
+  }
 }
 
 void
@@ -173,6 +193,11 @@ OpenMCStudy::meshChanged()
 
   // Invalidate all of the old starting info because we can't be sure those elements still exist
   for (const auto & ray : _rays)
+  {
+    ray->invalidateStartingElem();
+    ray->invalidateStartingIncomingSide();
+  }
+  for (const auto & ray : _local_rays)
   {
     ray->invalidateStartingElem();
     ray->invalidateStartingIncomingSide();
@@ -196,6 +221,7 @@ OpenMCStudy::defineRaysInternal()
     CONSOLE_TIMED_PRINT("Defining rays");
 
     _rays.clear();
+    _local_rays.clear();
 
     defineRays();
   }
@@ -208,6 +234,7 @@ OpenMCStudy::defineRaysInternal()
   for (const auto & ray : _rays)
     if (!ray)
       mooseError(_error_prefix, ": A nullptr Ray was found in _rays after defineRays().");
+
 }
 
 void
@@ -215,17 +242,59 @@ OpenMCStudy::defineRays()
 {
   // Loop over particles
   // TODO MPI, split on nodes
-  for (std::size_t i = 0; i < openmc::settings::n_particles; ++i)
+  std::cout << "Number of rays " << openmc::settings::n_particles << std::endl;
+  for (int64_t i = 0; i < openmc::settings::n_particles; ++i)
   {
-    const auto & ray = acquireRay();
+    // Get a ray from the study
+    std::shared_ptr<Ray> ray = acquireRay();
+    openmc::Particle neutron;
 
-    //initialize_history(ray, i);
-    //ray->setStartingElemen();
-    //ray->setDirection();
+    // Have OpenMC initialize all the information
+    openmc::initialize_history(neutron, i + 1);
+    /* includes :
+    position, direction, energy, weight, children
+    filter initialization
+    various indexes, tally derivatives etc
+    */
 
-    // moveRayToBuffer(ray);
+    // save the OpenMC neutron in AuxData
+    // OR
+    // make a class that inherits from both
+    // OR
+    // use fake neutrons to call the routines and move results over
+    // OR
+    // use fake neutrons created once and use references to move results over
+
+    // Set starting information
+    Point start(neutron.r()[0], neutron.r()[1], neutron.r()[2]);
+    Point direction(neutron.u()[0], neutron.u()[1], neutron.u()[2]);
+    // Claimer will locate the starting point
+
+    ray->setStart(start);
+    ray->setStartingDirection(direction);
+    ray->setStartingMaxDistance(10);  //TODO Just have the real particle death
+
+    ray->auxData(0) = neutron.E_;
+    
+    _rays.emplace_back(std::move(ray));
   }
 
 }
 
-// Execute: rewrite openmc_run but plug in the Rays
+// void OpenMCStudy::execute()
+// {
+//   std::cout << "In execute" << std::endl;
+//   // This may be needed to handle the batching of neutrons
+//
+// }
+
+void OpenMCStudy::postExecuteStudy()
+{
+  // Transfer information from Ray to openmc neutron
+  openmc::Particle p;
+
+  // TODO
+
+  // Bank neutron
+  // p.event_death();
+}

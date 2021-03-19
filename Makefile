@@ -6,7 +6,6 @@
 # MOOSE_DIR        - Root directory of the MOOSE project
 #
 # TODO: -Pass debug flags to OpenMC
-#       -Find how to link libopenmc without LD_LIBRARY_PATH (-Wl,-rpath?)
 # ======================================================================================
 MACAW_DIR       := $(abspath $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
 CONTRIB_DIR     := $(MACAW_DIR)

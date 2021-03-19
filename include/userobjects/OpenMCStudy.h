@@ -15,10 +15,11 @@
 
 // openmc includes
 
+// TODO: Consider inheriting from RepeatableRayStudyBase
 
 /**
  * Class to use the Monte Carlo method for neutron transport. Wraps OpenMC function
- * calls for initialization
+ * calls for initializing simulation, for initialization and banking of neutrons
  */
 class OpenMCStudy : public RayTracingStudy
 {
@@ -29,12 +30,13 @@ public:
   static InputParameters validParams();
 
 protected:
-
 private:
   void meshChanged() override;
   void generateRays() override;
+  // void execute() override;
+  void postExecuteStudy() override;
 
-  //TODO Delete if they only provide a timer
+  // TODO Delete if they only provide a timer
   void claimRaysInternal();
   void defineRaysInternal();
 
@@ -42,6 +44,9 @@ private:
 
   /// Vector of Rays that the user will fill into in defineRays() (restartable)
   std::vector<std::shared_ptr<Ray>> & _rays;
+
+  /// Storage for all of the Rays this processor is responsible for (restartable)
+  std::vector<std::shared_ptr<Ray>> & _local_rays;
 
   /// The object used to claim Rays
   ClaimRays _claim_rays;
