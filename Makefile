@@ -6,6 +6,8 @@
 # MOOSE_DIR        - Root directory of the MOOSE project
 #
 # TODO: -Pass debug flags to OpenMC
+#       -Cleanup all the includes of the OpenMC dependencies
+#       -Find how to link libopenmc without LD_LIBRARY_PATH (-Wl,-rpath?)
 # ======================================================================================
 MACAW_DIR       := $(abspath $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
 CONTRIB_DIR     := $(MACAW_DIR)
@@ -28,8 +30,8 @@ endif
 
 # This needs to be exported
 OPENMC_BUILDDIR := $(MACAW_DIR)/build/openmc
-OPENMC_INSTALL_DIR := $(CONTRIB_INSTALL_DIR)
-OPENMC_INCLUDES := -I$(OPENMC_INSTALL_DIR)/include
+OPENMC_INSTALL_DIR := $(CONTRIB_DIR)/openmc/build
+OPENMC_INCLUDES := -I$(OPENMC_INSTALL_DIR)/include -I$(OPENMC_DIR)/vendor/fmt/include -I$(OPENMC_DIR)/vendor/pugixml/src -I$(OPENMC_DIR)/vendor/xtensor/include -I$(OPENMC_DIR)/vendor/xtl/include -I$(OPENMC_DIR)/vendor/gsl-lite/include -I$(OPENMC_DIR)/include
 OPENMC_LIBDIR := $(OPENMC_INSTALL_DIR)/lib
 OPENMC_LIB := $(OPENMC_LIBDIR)/libopenmc.so
 # This is used in $(FRAMEWORK_DIR)/build.mk
@@ -74,7 +76,7 @@ MISC                        := no
 NAVIER_STOKES               := no
 PHASE_FIELD                 := no
 POROUS_FLOW                 := no
-RAY_TRACING                 := no
+RAY_TRACING                 := yes
 RDG                         := no
 RICHARDS                    := no
 STOCHASTIC_TOOLS            := no
@@ -86,7 +88,7 @@ include $(MOOSE_DIR)/modules/modules.mk
 
 # dep apps
 APPLICATION_DIR    := $(CURDIR)
-APPLICATION_NAME   := ma_caw
+APPLICATION_NAME   := macaw
 BUILD_EXEC         := yes
 GEN_REVISION       := no
 include            $(MACAW_DIR)/config/openmc.mk

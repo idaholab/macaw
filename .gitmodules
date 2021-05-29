@@ -1,0 +1,6 @@
+[submodule "moose"]
+	path = moose
+	url = https://github.com/idaholab/moose.git
+[submodule "openmc"]
+	path = openmc
+	url = git@github.com:openmc-dev/openmc.git

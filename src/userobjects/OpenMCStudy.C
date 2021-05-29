@@ -53,7 +53,7 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
   _rays(declareRestartableDataWithContext<std::vector<std::shared_ptr<Ray>>>("rays", this)),
   _local_rays(
       declareRestartableDataWithContext<std::vector<std::shared_ptr<Ray>>>("local_rays", this)),
-  _claim_rays(*this, *parallelStudy(), _mesh, _rays, _local_rays, false),
+  _claim_rays(*this, _rays, _local_rays, false),
   _claim_rays_timer(registerTimedSection("claimRays", 1)),
   _define_rays_timer(registerTimedSection("defineRays", 1))
 {
@@ -230,10 +230,10 @@ OpenMCStudy::defineRaysInternal()
   auto num_rays = _rays.size();
   _communicator.sum(num_rays);
   if (!num_rays)
-    mooseError(_error_prefix, ": No Rays were moved to _rays in defineRays()");
+    mooseError("No Rays were moved to _rays in defineRays()");
   for (const auto & ray : _rays)
     if (!ray)
-      mooseError(_error_prefix, ": A nullptr Ray was found in _rays after defineRays().");
+      mooseError("A nullptr Ray was found in _rays after defineRays().");
 
 }
 
@@ -275,7 +275,7 @@ OpenMCStudy::defineRays()
     ray->setStartingMaxDistance(10);  //TODO Just have the real particle death
 
     ray->auxData(0) = neutron.E_;
-    
+
     _rays.emplace_back(std::move(ray));
   }
 
