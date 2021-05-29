@@ -4,12 +4,12 @@ $(OPENMC_BUILDDIR)/Makefile: $(OPENMC_DIR)/CMakeLists.txt
 				cd $(OPENMC_BUILDDIR) && \
 				cmake -L \
 				-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
-				-Dlibmesh=ON \
 				-Doptimize=ON \
 				-DCMAKE_PREFIX_PATH=$(LIBMESH_DIR) \
 				-DCMAKE_INSTALL_PREFIX=$(OPENMC_INSTALL_DIR) \
 				-DCMAKE_INSTALL_LIBDIR=$(OPENMC_LIBDIR) \
 				$(OPENMC_DIR)
+# 				-Dlibmesh=ON \ not needed for MaCaw
 
 build_openmc: | $(OPENMC_BUILDDIR)/Makefile
 				make VERBOSE=1 -C $(OPENMC_BUILDDIR) install
