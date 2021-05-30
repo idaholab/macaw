@@ -13,4 +13,5 @@
     <summary>true</summary>
     <tallies>false</tallies>
   </output>
+  <!-- <verbosity>10</verbosity> -->
 </settings>

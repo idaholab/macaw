@@ -14,18 +14,18 @@
   []
 []
 
+[Problem]
+  solve = false
+[]
+
+#############
+# mock diffusion problem to avoid the coverage checks
 [Variables/u]
 []
 
 [Kernels/diff]
   type = Diffusion
   variable = u
-[]
-
-[RayKernels/collision]
-  type = CollisionKernel
-  temperature = u
-  block_to_materials = "0 1 1 2 2 3"
 []
 
 [BCs]
@@ -42,32 +42,24 @@
     value = 1
   []
 []
+#############
+
+[RayKernels/collision]
+  type = CollisionKernel
+  temperature = u
+  blocks = "0 1 2"
+  materials = "1 2 3"
+[]
+[RayKernels/u_integral]
+  type = VariableIntegralRayKernel
+  variable = u
+  # rays = 'diag right_up'
+[]
 
 [RayBCs]
   [reflect]
     type = ReflectRayBC
     boundary = 'back front top right left bottom'
-  []
-[]
-
-[Problem]
-  solve = false
-[]
-
-[Executioner]
-  type = Steady
-[]
-
-[Outputs]
-  exodus = false
-  csv = true
-  [rays]
-    type = RayTracingExodus
-    study = study
-    output_data = true # enable for data output
-    # output_data_nodal = true # enable for nodal data output
-    output_aux_data = true
-    execute_on = final
   []
 []
 
@@ -85,10 +77,21 @@
   aux_data_on_cache_traces = true
 []
 
-[RayKernels/u_integral]
-  type = VariableIntegralRayKernel
-  variable = u
-  # rays = 'diag right_up'
+[Executioner]
+  type = Steady
+[]
+
+[Outputs]
+  exodus = false
+  csv = true
+  [rays]
+    type = RayTracingExodus
+    study = study
+    output_data = true # enable for data output
+    # output_data_nodal = true # enable for nodal data output
+    output_aux_data = true
+    execute_on = final
+  []
 []
 
 [Postprocessors]

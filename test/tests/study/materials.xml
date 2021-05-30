@@ -1,6 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
 <materials>
-  <cross_sections>/Users/giudgl/projects/openmc/data/lib80/cross_sections.xml</cross_sections>
   <material depletable="true" id="1" name="UO2 Fuel">
     <density units="g/cm3" value="10.29769" />
     <nuclide ao="0.00055815" name="U235" />
