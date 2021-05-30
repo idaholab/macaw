@@ -97,6 +97,10 @@ LONG TERM:
   // tally initialization TODO
   // nuclide index mapping OK
 
+  // TODO Initialize this nicer
+  registerRayAuxData("energy");
+  registerRayAuxData("weight");
+
   /* LONG TERM : REDO INITIALIZATION AND SKIP WHAT ISNT NECESSARY */
   // // Initialize nuclear data (energy limits, log grid)
   // if (openmc::settings::run_CE) {
@@ -272,9 +276,11 @@ OpenMCStudy::defineRays()
 
     ray->setStart(start);
     ray->setStartingDirection(direction);
-    ray->setStartingMaxDistance(10);  //TODO Just have the real particle death
+    ray->setStartingMaxDistance(100);  //TODO Just have the real particle death
 
-    ray->auxData(0) = neutron.E_;
+    // Store neutron information
+    ray->auxData(0) = neutron.E();
+    ray->auxData(1) = neutron.wgt();
 
     _rays.emplace_back(std::move(ray));
   }

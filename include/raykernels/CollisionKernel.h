@@ -13,6 +13,7 @@
 #include "MooseVariableInterface.h"
 
 // openmc includes
+#include "openmc/particle.h"
 
 class CollisionKernel : public IntegralRayKernelBase
 {
@@ -28,5 +29,8 @@ protected:
   const VariableValue & _T;
 
   // Map from blocks to OpenMC materials
-  const std::map<int, int> _block_to_openmc_materials;
+  std::unordered_map<int, int> _block_to_openmc_materials;
+
+  // OpenMC particle objects to call openmc routines with
+  std::vector<openmc::Particle> _particles;
 };

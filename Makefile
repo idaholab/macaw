@@ -7,6 +7,7 @@
 #
 # TODO: -Pass debug flags to OpenMC
 #       -Cleanup all the includes of the OpenMC dependencies
+#       -Figure out problem with devel mode
 #       -Find how to link libopenmc without LD_LIBRARY_PATH (-Wl,-rpath?)
 # ======================================================================================
 MACAW_DIR       := $(abspath $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
