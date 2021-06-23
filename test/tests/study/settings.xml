@@ -2,8 +2,8 @@
 <settings>
   <run_mode>eigenvalue</run_mode>
   <particles>10</particles>
-  <batches>100</batches>
-  <inactive>10</inactive>
+  <batches>2</batches>
+  <inactive>1</inactive>
   <source strength="1.0">
     <space type="box">
       <parameters>-0.62992 -0.62992 -0.62992 0.62992 0.62992 0.62992</parameters>

@@ -12,6 +12,7 @@
 
 // MOOSE includes
 #include "TimedPrint.h"
+#include "Transient.h"
 
 // openmc includes
 #ifdef OPENMC_MPI
@@ -58,7 +59,6 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
   _define_rays_timer(registerTimedSection("defineRays", 1))
 {
 
-// A place to think out loud:
 /*
 This class doesnt really need to get anything that can be in OpenMC input files:
 - materials
@@ -75,9 +75,16 @@ There are a few transfers we want to make:
 LONG TERM:
 - moose need to handle the tallies, because we need domain decomposition
 - more than 1 batch ? If it's annoying
-*/
 
-// Idea : run OpenMC initialization in constructor
+How to handle OpenMC physics calls
+// save the OpenMC neutron in AuxData
+// OR
+// make a class that inherits from both
+// OR
+// use fake neutrons to call the routines and move results over
+// OR
+// use fake neutrons created once and use references to move results over
+*/
 
   // Initialize run
   char * argv[1] = {(char*)"openmc"};
@@ -86,8 +93,9 @@ LONG TERM:
     openmc::fatal_error(openmc_err_msg);
 
   // Check run mode
-  if (openmc::settings::run_mode == openmc::RunMode::PLOTTING || openmc::settings::run_mode == openmc::RunMode::VOLUME ||
-      openmc::settings::run_mode == openmc::RunMode::PARTICLE)
+  if (openmc::settings::run_mode == openmc::RunMode::PARTICLE ||
+      openmc::settings::run_mode == openmc::RunMode::PLOTTING ||
+      openmc::settings::run_mode == openmc::RunMode::VOLUME)
     mooseError("Requested run mode is currently not supported by MaCaw");
 
   openmc_simulation_init();
@@ -100,6 +108,12 @@ LONG TERM:
   // TODO Initialize this nicer
   registerRayAuxData("energy");
   registerRayAuxData("weight");
+
+  // Set the number of steps of the Transient executioner as the number of batches
+  if (dynamic_cast<Transient *>(_app.getExecutioner()))
+    dynamic_cast<Transient *>(_app.getExecutioner())->forceNumSteps(openmc::settings::n_batches);
+  else
+    mooseWarning("Unable to set the number of batches for a non Transient Executioner");
 
   /* LONG TERM : REDO INITIALIZATION AND SKIP WHAT ISNT NECESSARY */
   // // Initialize nuclear data (energy limits, log grid)
@@ -169,6 +183,8 @@ OpenMCStudy::~OpenMCStudy()
 
 void OpenMCStudy::generateRays()
 {
+  std::cout << "/////////// GENERATING NEW RAYS /////////" << std::endl;
+
   // Create all the rays, place them in _rays
   defineRaysInternal();
 
@@ -178,7 +194,6 @@ void OpenMCStudy::generateRays()
 
   //TODO Reinit the elements for the physics
 
-  std::cout << "Local rays size: " << _local_rays.size() << std::endl;
   // Move the rays to the work buffers
   for (auto & ray : _local_rays)
   {
@@ -244,39 +259,37 @@ OpenMCStudy::defineRaysInternal()
 void
 OpenMCStudy::defineRays()
 {
-  // Loop over particles
-  // TODO MPI, split on nodes
-  std::cout << "Number of rays " << openmc::settings::n_particles << std::endl;
+  // Set the batch and generation number
+  //TODO separate batches and generations
+  openmc::simulation::current_batch = _t_step;
+  openmc::simulation::current_gen = 1;
+  openmc::Particle neutron;
+
+  // Loop over particles. create the rays
+  // This needs to be done over all processes, since we do not know where the particle will
+  // be created.
+  //TODO OpenMP parallelism
   for (int64_t i = 0; i < openmc::settings::n_particles; ++i)
   {
     // Get a ray from the study
     std::shared_ptr<Ray> ray = acquireRay();
-    openmc::Particle neutron;
 
     // Have OpenMC initialize all the information
     openmc::initialize_history(neutron, i + 1);
-    /* includes :
-    position, direction, energy, weight, children
-    filter initialization
-    various indexes, tally derivatives etc
-    */
 
-    // save the OpenMC neutron in AuxData
-    // OR
-    // make a class that inherits from both
-    // OR
-    // use fake neutrons to call the routines and move results over
-    // OR
-    // use fake neutrons created once and use references to move results over
+    /* includes :
+      position, direction, energy, weight, children
+      filter initialization
+      various indexes, tally derivatives etc
+    */
 
     // Set starting information
     Point start(neutron.r()[0], neutron.r()[1], neutron.r()[2]);
     Point direction(neutron.u()[0], neutron.u()[1], neutron.u()[2]);
-    // Claimer will locate the starting point
 
+    // Claimer will locate the starting point
     ray->setStart(start);
     ray->setStartingDirection(direction);
-    ray->setStartingMaxDistance(100);  //TODO Just have the real particle death
 
     // Store neutron information
     ray->auxData(0) = neutron.E();
