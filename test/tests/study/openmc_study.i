@@ -12,47 +12,38 @@
     ymax = 5
     zmax = 5
   []
+  [./add_subdomain]
+    input = gmg
+    type = SubdomainBoundingBoxGenerator
+    top_right = '1 1 1'
+    bottom_left = '-1 -1 -1'
+    block_id = 1
+    block_name = 'center'
+  [../]
 []
 
 [Problem]
   solve = false
+
+  kernel_coverage_check = false
 []
 
-#############
-# mock diffusion problem to avoid the coverage checks
-[Variables/u]
+# Main things we care about for the coupling
+[Variables/temperature]
 []
 
-[Kernels/diff]
-  type = Diffusion
-  variable = u
+[AuxVariables/power]
 []
-
-[BCs]
-  [left]
-    type = DirichletBC
-    variable = u
-    boundary = left
-    value = 0
-  []
-  [right]
-    type = DirichletBC
-    variable = u
-    boundary = right
-    value = 1
-  []
-[]
-#############
 
 [RayKernels/collision]
   type = CollisionKernel
-  temperature = u
+  temperature = temperature
   blocks = "0 1 2"
-  materials = "1 2 3"
+  materials = "0 1 2"  # openmc material id minus one !
 []
 [RayKernels/u_integral]
   type = VariableIntegralRayKernel
-  variable = u
+  variable = temperature
   # rays = 'diag right_up'
 []
 

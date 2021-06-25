@@ -67,7 +67,7 @@ CollisionKernel::onSegment()
   auto p = &_particles[_tid];
   p->sqrtkT() = std::sqrt(openmc::K_BOLTZMANN * _T[0]);
   p->material() = _block_to_openmc_materials.at(_current_elem->subdomain_id());
-  p->coord(p->n_coord() - 1).cell = openmc::C_NONE; // avoids a geometry search
+  p->coord(p->n_coord() - 1).cell = 0; // avoids a geometry search
   p->u() = {currentRay()->direction()(0),
             currentRay()->direction()(1),
             currentRay()->direction()(2)};
@@ -80,7 +80,8 @@ CollisionKernel::onSegment()
 
   // Compute distance to next collision
   // p.event_advance();
-  // scores tracklength tallies as well
+  // TODO scores tracklength tallies as well
+  // TODO Can we use this??
 
   const Real collision_distance = -std::log(openmc::prn(p->current_seed())) /
       p->macro_xs().total;
@@ -101,7 +102,8 @@ CollisionKernel::onSegment()
 
     // Compute collision
     p->event_collide();
-    std::cout << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0) << " -> " << p->E() << std::endl;
+    std::cout << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0) << " -> " << p->E() <<
+                 " block " << _current_elem->subdomain_id() << " material " << p->material() << std::endl;
 
     // Update Ray direction
     Point new_direction(p->u()[0], p->u()[1], p->u()[2]);
