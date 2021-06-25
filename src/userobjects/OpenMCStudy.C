@@ -259,6 +259,9 @@ OpenMCStudy::defineRaysInternal()
 void
 OpenMCStudy::defineRays()
 {
+  // Initialize total weight and tallies list
+  openmc::initialize_batch();
+
   // Set the batch and generation number
   //TODO separate batches and generations
   openmc::simulation::current_batch = _t_step;
@@ -309,11 +312,10 @@ OpenMCStudy::defineRays()
 
 void OpenMCStudy::postExecuteStudy()
 {
-  // Transfer information from Ray to openmc neutron
-  openmc::Particle p;
+  // Reduce global tallies, sort and distribute the fission bank
+  //TODO: Not much need to distribute the fission bank, with the claiming process
+  openmc::finalize_generation();
 
-  // TODO
-
-  // Bank neutron
-  // p.event_death();
+  // Reduce all tallies, write state/source_point, run CMFD,
+  openmc::finalize_batch();
 }
