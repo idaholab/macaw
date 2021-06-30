@@ -34,6 +34,7 @@
 #include "openmc/output.h"
 #include "openmc/finalize.h"
 #include "openmc/source.h"
+#include "openmc/bank.h"
 
 registerMooseObject("MaCawApp", OpenMCStudy);
 
@@ -54,7 +55,7 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
   _rays(declareRestartableDataWithContext<std::vector<std::shared_ptr<Ray>>>("rays", this)),
   _local_rays(
       declareRestartableDataWithContext<std::vector<std::shared_ptr<Ray>>>("local_rays", this)),
-  _claim_rays(*this, _rays, _local_rays, false),
+  _claim_rays(*this, _rays, _local_rays, true),
   _claim_rays_timer(registerTimedSection("claimRays", 1)),
   _define_rays_timer(registerTimedSection("defineRays", 1))
 {
@@ -272,7 +273,7 @@ OpenMCStudy::defineRays()
   // This needs to be done over all processes, since we do not know where the particle will
   // be created.
   //TODO OpenMP parallelism
-  for (int64_t i = 0; i < openmc::settings::n_particles; ++i)
+  for (int64_t i = 0; i < openmc::simulation::source_bank.size(); ++i)
   {
     // Get a ray from the study
     std::shared_ptr<Ray> ray = acquireRay();

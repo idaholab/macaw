@@ -85,6 +85,17 @@
   []
 []
 
+# To look at domain decomposition
+[AuxVariables/domain]
+[]
+
+[AuxKernels]
+  [domains]
+    type = ProcessorIDAux
+    variable = domain
+  []
+[]
+
 [Postprocessors]
   # [diag_line_integral]
   #   type = RayIntegralValue
