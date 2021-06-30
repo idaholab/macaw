@@ -33,4 +33,7 @@ protected:
 
   // OpenMC particle objects to call openmc routines with
   std::vector<openmc::Particle> _particles;
+
+  // whether to print detailed collision information
+  const bool & _verbose;
 };

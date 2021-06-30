@@ -262,7 +262,7 @@ OpenMCStudy::defineRays()
 {
   // Initialize total weight and tallies list
   openmc::initialize_batch();
-
+  openmc::initialize_generation();
   // Set the batch and generation number
   //TODO separate batches and generations
   openmc::simulation::current_batch = _t_step;

@@ -33,12 +33,15 @@ CollisionKernel::validParams()
                                               "Blocks on which this kernel is defined.");
   params.addRequiredParam<std::vector<unsigned int>>("materials",
                                               "OpenMC material ids for each block.");
+  params.addParam<bool>("verbose", false, "Whether to print collision information");
+
   return params;
 }
 
 CollisionKernel::CollisionKernel(const InputParameters & params)
   : IntegralRayKernelBase(params),
-    _T(coupledValue("temperature"))
+    _T(coupledValue("temperature")),
+    _verbose(getParam<bool>("verbose"))
 {
   // Check that the temperature variable is a constant monomial
   // TODO check properly
@@ -65,6 +68,7 @@ CollisionKernel::onSegment()
 
   // Use a fake neutron to compute the cross sections
   auto p = &_particles[_tid];
+
   p->sqrtkT() = std::sqrt(openmc::K_BOLTZMANN * _T[0]);
   p->material() = _block_to_openmc_materials.at(_current_elem->subdomain_id());
   p->coord(p->n_coord() - 1).cell = 0; // avoids a geometry search
@@ -100,11 +104,15 @@ CollisionKernel::onSegment()
     Point current_position = currentRay()->currentPoint() -
         (_current_segment_length - collision_distance) * currentRay()->direction();
 
+
+    p->keff_tally_tracklength() += p->wgt() * collision_distance * p->macro_xs().nu_fission;
     // Compute collision
     p->event_collide();
+
+    if (_verbose)
     std::cout << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0) << " -> " << p->E() <<
                  " block " << _current_elem->subdomain_id() << " material " << p->material() << std::endl;
-
+    //std::cout << p->keff_tally_collision() << std::endl;
     // Update Ray direction
     Point new_direction(p->u()[0], p->u()[1], p->u()[2]);
     if (p->event() == openmc::TallyEvent::SCATTER)
@@ -117,9 +125,13 @@ CollisionKernel::onSegment()
     // Keep track of weight (for implicit capture)
     currentRay()->auxData(1) = p->wgt();
 
+
     // Mark the ray as 'should not continue' if absorption was sampled
     //TODO Double check for implicit absorption, what is openmc returning ?
-    if (p->event() == openmc::TallyEvent::KILL || p->event() == openmc::TallyEvent::ABSORB)
+    if (p->event() == openmc::TallyEvent::KILL || p->event() == openmc::TallyEvent::ABSORB) {
       currentRay()->setShouldContinue(false);
+      p->event_death();
+      }
+    }
   }
 }
