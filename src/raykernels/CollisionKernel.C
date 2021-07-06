@@ -127,11 +127,24 @@ CollisionKernel::onSegment()
 
 
     // Mark the ray as 'should not continue' if absorption was sampled
+    // and no secondary particles were created during the particle life
     //TODO Double check for implicit absorption, what is openmc returning ?
-    if (p->event() == openmc::TallyEvent::KILL || p->event() == openmc::TallyEvent::ABSORB) {
-      currentRay()->setShouldContinue(false);
-      p->event_death();
+    if (p->event() == openmc::TallyEvent::KILL || p->event() == openmc::TallyEvent::ABSORB)
+    {
+      // If any, copy attributes from secondary particles to the ray
+      p->event_revive_from_secondary();
+      if (p->alive())
+      {
+        currentRay()->auxData(0) = p->E();
+        currentRay()->auxData(1) = p->wgt();
+
+        // Set starting information
+        Point start(p->r()[0], p->r()[1], p->r()[2]);
+        Point direction(p->u()[0], p->u()[1], p->u()[2]);
+        changeRayStartDirection(start, direction);
       }
+      else
+        currentRay()->setShouldContinue(false);
     }
   }
 }
