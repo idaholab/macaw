@@ -320,3 +320,15 @@ void OpenMCStudy::postExecuteStudy()
   // Reduce all tallies, write state/source_point, run CMFD,
   openmc::finalize_batch();
 }
+
+void OpenMCStudy::checkOpenMCVersion()
+{
+  if (openmc::VERSION_MAJOR < 0 || openmc::VERSION_MINOR < 13)
+    mooseWarning("OpenMC version detected ", openmc::VERSION_MAJOR, ":", openmc::VERSION_MINOR,
+        "is anterior to the supported version (0.13).");
+  if (openmc::VERSION_MAJOR > 0 || openmc::VERSION_MINOR > 13)
+    mooseWarning("OpenMC version detected ", openmc::VERSION_MAJOR, ":", openmc::VERSION_MINOR,
+        "is posterior to the supported version (0.13).");
+
+  //TODO Check for specifically unsupported versions
+}

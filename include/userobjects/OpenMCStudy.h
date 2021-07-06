@@ -42,6 +42,9 @@ private:
 
   void defineRays();
 
+  /// Routine to warn about potential incompatibility issues
+  void checkOpenMCVersion();
+
   /// Vector of Rays that the user will fill into in defineRays() (restartable)
   std::vector<std::shared_ptr<Ray>> & _rays;
 
