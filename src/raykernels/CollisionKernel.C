@@ -90,6 +90,10 @@ CollisionKernel::onSegment()
   const Real collision_distance = -std::log(openmc::prn(p->current_seed())) /
       p->macro_xs().total;
 
+  // Contribute to the tracklength keff estimator
+  p->keff_tally_tracklength() += p->wgt() *
+      std::min(collision_distance, _current_segment_length) * p->macro_xs().nu_fission;
+
   // Shorter than next intersection, ray tracing will take care of moving the
   // particle
   if (collision_distance > _current_segment_length) {
@@ -104,15 +108,13 @@ CollisionKernel::onSegment()
     Point current_position = currentRay()->currentPoint() -
         (_current_segment_length - collision_distance) * currentRay()->direction();
 
-
-    p->keff_tally_tracklength() += p->wgt() * collision_distance * p->macro_xs().nu_fission;
     // Compute collision
     p->event_collide();
 
     if (_verbose)
-    std::cout << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0) << " -> " << p->E() <<
-                 " block " << _current_elem->subdomain_id() << " material " << p->material() << std::endl;
-    //std::cout << p->keff_tally_collision() << std::endl;
+      std::cout << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0) << " -> " << p->E() <<
+                   " block " << _current_elem->subdomain_id() << " material " << p->material() << std::endl;
+
     // Update Ray direction
     Point new_direction(p->u()[0], p->u()[1], p->u()[2]);
     if (p->event() == openmc::TallyEvent::SCATTER)
@@ -125,12 +127,32 @@ CollisionKernel::onSegment()
     // Keep track of weight (for implicit capture)
     currentRay()->auxData(1) = p->wgt();
 
-
     // Mark the ray as 'should not continue' if absorption was sampled
+    // and no secondary particles were created during the particle life
     //TODO Double check for implicit absorption, what is openmc returning ?
-    if (p->event() == openmc::TallyEvent::KILL || p->event() == openmc::TallyEvent::ABSORB) {
-      currentRay()->setShouldContinue(false);
-      p->event_death();
+    if (p->event() == openmc::TallyEvent::KILL || p->event() == openmc::TallyEvent::ABSORB)
+    {
+      // If any, copy attributes from secondary particles to the ray
+      p->event_revive_from_secondary();
+      if (p->alive())
+      {
+        currentRay()->auxData(0) = p->E();
+        currentRay()->auxData(1) = p->wgt();
+
+        // Set starting information
+        Point start(p->r()[0], p->r()[1], p->r()[2]);
+        Point direction(p->u()[0], p->u()[1], p->u()[2]);
+        changeRayStartDirection(start, direction);
+
+        if (_verbose)
+          std::cout << "Running secondary : energy " << p->E() << " position " << start <<
+                       " block " << _current_elem->subdomain_id() << " material " << p->material()
+                       << std::endl;
+      }
+      else
+      {
+        currentRay()->setShouldContinue(false);
+        p->event_death();
       }
     }
   }

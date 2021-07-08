@@ -263,6 +263,7 @@ OpenMCStudy::defineRays()
   // Initialize total weight and tallies list
   openmc::initialize_batch();
   openmc::initialize_generation();
+
   // Set the batch and generation number
   //TODO separate batches and generations
   openmc::simulation::current_batch = _t_step;
@@ -319,4 +320,16 @@ void OpenMCStudy::postExecuteStudy()
 
   // Reduce all tallies, write state/source_point, run CMFD,
   openmc::finalize_batch();
+}
+
+void OpenMCStudy::checkOpenMCVersion()
+{
+  if (openmc::VERSION_MAJOR < 0 || openmc::VERSION_MINOR < 13)
+    mooseWarning("OpenMC version detected ", openmc::VERSION_MAJOR, ":", openmc::VERSION_MINOR,
+        "is anterior to the supported version (0.13).");
+  if (openmc::VERSION_MAJOR > 0 || openmc::VERSION_MINOR > 13)
+    mooseWarning("OpenMC version detected ", openmc::VERSION_MAJOR, ":", openmc::VERSION_MINOR,
+        "is posterior to the supported version (0.13).");
+
+  //TODO Check for specifically unsupported versions
 }
