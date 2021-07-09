@@ -27,12 +27,11 @@ OpenMCTally::validParams()
 
   // scores/filters/nuclides/estimators/type/particle/reaction_type
 
-
   params.addParam<MooseEnum>("particle_type",getParticleTypeEnum(),"particle type to track in tally");
   params.addParam<MooseEnum>("tally_estimator", getTallyEstimatorEnum(), "Estimator type used for the tally");
-  params.addParam<std::vector<std::string>>("tally_scores","Scores to apply to the tally");
+  params.addRequiredParam<std::vector<std::string>>("tally_scores","Scores to apply to the tally");
   //params.addParam<std::vector<openmc::ReactionType>>("tally_reaction_types","MT reactions to tally");
-  params.addParam<std::vector<std::string>>("tally_filters","Filters to apply to the tally");
+  params.addRequiredParam<std::vector<std::string>>("tally_filters","Filters to apply to the tally");
   params.addParam<std::vector<Real>>("tally_energy_bins","Define energy bins for the tally");
 
   return params;
@@ -40,7 +39,7 @@ OpenMCTally::validParams()
 
 OpenMCTally::OpenMCTally(const InputParameters & params)
   : GeneralUserObject(params),
-  _tally_particle(getParam<MooseEnum>("particle_type").getEnum<particles::ParticleEnum>()),
+  _tally_particle(getParam<MooseEnum>("particle_type").getEnum<particles::ParticleEnum>()),  // TODO This is weird. Why do you need the getEnum??
   _tally_estimator(getParam<MooseEnum>("tally_estimator").getEnum<estimators::TallyEstimatorEnum>()),
   _tally_scores(getParam<std::vector<std::string>>("tally_scores")),
 //  _tally_reaction_types(getParam<std::vector<std::string>>("tally_reaction_types")),
@@ -48,15 +47,19 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
   _tally_energy_bins(getParam<std::vector<Real>>("tally_energy_bins"))
 {
 
+  // TODO Add check for tracklength which we cant do (?)
+
+  // TODO Add check for execute_on initial only
+
 }
 
 void
-OpenMCTally::execute()
+OpenMCTally::initialize()
 {
   using namespace openmc;
 
   if (_tally_particle != particles::neutron) {
-    paramError("particle_type", "Only neutrons are currently supported.");
+    paramError("particle_type", "Only neutrons are currently supported.");   // TODO Move this to constructor
   }
 
   // create a new tally with auto id
@@ -69,14 +72,14 @@ OpenMCTally::execute()
   //create vector of filters to apply to tally
   vector<Filter*> filters;
 
-  std::cout << "Adding tally filters" << std::endl;
+  std::cout << "Adding " << _tally_filters.size() << " tally filters" << std::endl;
   for(int i = 0; i < _tally_filters.size(); ++i){
     //create filter and add to filters vector
     // create takes in string argument
     // make filter param MooseEnum?
     // make method to get string given enum to git rid of if/switch statments?
 
-    Filter* filter_ptr = Filter::create(_tally_filters.at(i), C_NONE);
+    Filter* filter_ptr = Filter::create(_tally_filters.at(i), i);  // ID of the filter needs to be incremented
 
     if (filter_ptr->type() == "energy" ){
       std::cout << " Adding energy filter" << std::endl;
@@ -93,16 +96,18 @@ OpenMCTally::execute()
       types.push_back(ParticleType::neutron);
       particle_filter->set_particles(types);
     }
+    else
+      mooseError("Unrecognized filter");
 
     filters.push_back(filter_ptr);
 
   }
-  // appply filters to new tally
+  // appply filters to the new tally
   model::tallies.back()->set_filters(filters);
 
   // apply scores
   std::cout << "Adding tally scores" << std::endl;
-  model::tallies.back()->set_scores(_tally_scores);
+  model::tallies.back()->set_scores({"kappa-fission"});
 
   // set the tally estimator
   // get rid of switch with enum to string method?
@@ -123,11 +128,15 @@ OpenMCTally::execute()
     {
       model::tallies.back()->estimator_ = TallyEstimator::COLLISION;
     }
+    default:
+      model::tallies.back()->estimator_ = TallyEstimator::COLLISION;
+      // mooseError("Unrecognized estimator");
+      // TODO This is being triggered so the input of the estimator must have an issue
   }
-  std::cout << "id: " << model::tallies.back()->id_ << std::endl;
+  std::cout << "Tally id: " << model::tallies.back()->id_ << std::endl;
 }
 
-void OpenMCTally::initialize() {};
+void OpenMCTally::execute() {};
 
 void OpenMCTally::finalize() {};
 
