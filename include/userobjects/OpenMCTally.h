@@ -39,9 +39,9 @@ public:
   void threadJoin();
 
 protected:
-  const particles::ParticleEnum _tally_particle;
+  const MooseEnum _tally_particle;
 
-  const estimators::TallyEstimatorEnum _tally_estimator;
+  const MooseEnum _tally_estimator;
 
   std::vector<std::string> _tally_scores;
 
