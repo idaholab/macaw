@@ -13,6 +13,7 @@
 #include "openmc/tallies/filter.h"
 #include "openmc/tallies/filter_energy.h"
 #include "openmc/tallies/filter_particle.h"
+#include "openmc/tallies/filter_universe.h"
 #include "openmc/particle_data.h"
 
 #include <string>
@@ -46,7 +47,6 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
   _tally_filters(getParam<std::vector<std::string>>("tally_filters")),
   _tally_energy_bins(getParam<std::vector<Real>>("tally_energy_bins"))
 {
-  _console << _tally_estimator << std::endl;
   if (_tally_particle != 0) {
     paramError("particle_type", "Only neutrons are currently supported.");
   }
@@ -58,6 +58,12 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
     paramError("execute_on", "execute_on must be INITIAL to ensure tallies are created "
      "once at the beginning of the simulation");
   }
+
+  //if (_tally_filters.contains("energy") && _tally_energy_bins.empty()) {
+  //  paramError("_tally_energy_bins", "Energy bins are required when using energy filters");
+  //}
+
+
 }
 
 void
@@ -98,7 +104,20 @@ OpenMCTally::initialize()
       vector<ParticleType> types;
       types.push_back(ParticleType::neutron);
       particle_filter->set_particles(types);
+
+    } else if (filter_ptr->type() == "universe"){
+      std::cout << " Adding universe filter" << std::endl;
+
+      UniverseFilter* universe_filter = dynamic_cast<UniverseFilter*>(filter_ptr);
+
+      vector<int> universe_ids;
+      for(int i = 0; i < model::universes.size(); ++i)
+        universe_ids.push_back(i);
+
+      universe_filter->set_universes(universe_ids);
+
     }
+
     else
       mooseError("Unrecognized filter");
 
@@ -141,6 +160,7 @@ OpenMCTally::initialize()
     t->init_results();
   }
 
+  _console << "Tally id: " << model::tallies.back()->id_ << std::endl << std::endl;
 }
 
 void

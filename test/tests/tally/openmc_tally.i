@@ -56,7 +56,7 @@
 []
 
 [UserObjects]
-
+  inactive = 'tally'
 
   [study]
     type = OpenMCStudy
@@ -81,6 +81,16 @@
     tally_filters = 'energy particle'
     tally_energy_bins = '1e-5 1e3 2e7'
 
+    execute_on = 'initial'
+  []
+
+  [univtally]
+    type = OpenMCTally
+
+    particle_type = 'neutron'
+    tally_estimator = 'COLLISION'
+    tally_scores = 'kappa-fission'
+    tally_filters = 'universe'
     execute_on = 'initial'
   []
 []
