@@ -25,6 +25,7 @@
 #include "openmc/particle_restart.h"
 #include "openmc/settings.h"
 #include "openmc/particle.h"
+#include "openmc/cell.h"
 
 // additional includes if want to decompose initialization
 #include "openmc/simulation.h"
@@ -100,6 +101,17 @@ How to handle OpenMC physics calls
     mooseError("Requested run mode is currently not supported by MaCaw");
 
   openmc_simulation_init();
+  // resize the number of cells in openmc to the number of elements in moose
+  std::cout << "Number of Mesh Elements: " << _mesh.nElem() << std::endl;
+  openmc::model::cells.resize(_mesh.nElem());
+  std::cout << "Resizing number of OpenMC cells to: " << openmc::model::cells.size() << std::endl;
+
+  // resize the number of universes in openmc to the number of subdomains in moose
+  std::cout << "Number of Mesh Subdomains: " << _mesh.meshSubdomains().size() << std::endl;
+  openmc::model::universes.resize(_mesh.meshSubdomains().size());
+  std::cout << "Resizing number of OpenMC universes to: " << openmc::model::universes.size() << std::endl;
+
+  for (int i = 0; i < openmc::model::universes.size(); ++i) openmc::model::universes[i]->id_ = i;
   // does data OK
   // work TODO -> no need here
   // banks TODO -> no need for us
