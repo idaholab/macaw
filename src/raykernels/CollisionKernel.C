@@ -74,7 +74,8 @@ CollisionKernel::onSegment()
   p->filter_matches().resize(openmc::model::tally_filters.size());
   p->sqrtkT() = std::sqrt(openmc::K_BOLTZMANN * _T[0]);
   p->material() = _block_to_openmc_materials.at(_current_elem->subdomain_id());
-  p->coord(p->n_coord() - 1).cell = 0; // avoids a geometry search
+  p->coord(p->n_coord() - 1).universe = _current_subdomain_id;
+  p->coord(p->n_coord() - 1).cell = _current_elem->id(); // avoids a geometry search
   p->u() = {
       currentRay()->direction()(0), currentRay()->direction()(1), currentRay()->direction()(2)};
   p->E() = currentRay()->auxData(0);

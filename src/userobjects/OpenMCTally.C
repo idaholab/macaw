@@ -14,6 +14,7 @@
 #include "openmc/tallies/filter_energy.h"
 #include "openmc/tallies/filter_particle.h"
 #include "openmc/tallies/filter_universe.h"
+#include "openmc/tallies/filter_cell.h"
 #include "openmc/particle_data.h"
 
 #include <string>
@@ -123,9 +124,18 @@ OpenMCTally::initialize()
 
       universe_filter->set_universes(universe_ids);
 
-    }
+    } else if (filter_ptr->type() == "cell"){
+      std::cout << " Adding cell filter" << std::endl;
 
-    else
+      CellFilter* cell_filter = dynamic_cast<CellFilter*>(filter_ptr);
+
+      vector<int> cell_ids;
+      for(int i = 0; i < model::cells.size(); ++i)
+        cell_ids.push_back(i);
+
+      cell_filter->set_cells(cell_ids);
+
+    } else
       mooseError("Unrecognized filter");
 
     filters.push_back(filter_ptr);
