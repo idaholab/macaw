@@ -41,7 +41,7 @@ OpenMCTally::validParams()
 
 OpenMCTally::OpenMCTally(const InputParameters & params)
   : GeneralUserObject(params),
-  _tally_particle(getParam<MooseEnum>("particle_type")),  // TODO This is weird. Why do you need the getEnum??
+  _tally_particle(getParam<MooseEnum>("particle_type")),
   _tally_estimator(params.get<MooseEnum>("tally_estimator")),
   _tally_scores(getParam<std::vector<std::string>>("tally_scores")),
 //  _tally_reaction_types(getParam<std::vector<std::string>>("tally_reaction_types")),
@@ -56,23 +56,16 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
   if (_tally_estimator != 2){
     paramError("tally_estimator", "Only collision estimator currently supported");
   }
-  // TODO Add check for tracklength which we cant do (?)
-
-  // TODO Add check for execute_on initial only
   if (!_execute_enum.contains(EXEC_INITIAL) || _execute_enum.size() > 1){
     paramError("execute_on", "execute_on must be INITIAL to ensure tallies are created "
      "once at the beginning of the simulation");
   }
-
-
 }
 
 void
 OpenMCTally::initialize()
 {
   using namespace openmc;
-
-
 
   // create a new tally with auto id
   std::cout << "Creating new tally" << std::endl;

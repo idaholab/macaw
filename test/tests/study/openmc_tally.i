@@ -113,15 +113,3 @@
   []
 []
 
-[Postprocessors]
-  # [diag_line_integral]
-  #   type = RayIntegralValue
-  #   ray_kernel = u_integral
-  #   # ray = diag
-  # []
-  # [right_up_line_integral]
-  #   type = RayIntegralValue
-  #   ray_kernel = u_integral
-  #   # ray = right_up
-  # []
-[]

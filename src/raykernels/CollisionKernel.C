@@ -111,7 +111,6 @@ CollisionKernel::onSegment()
         currentRay()->currentPoint() -
         (_current_segment_length - collision_distance) * currentRay()->direction();
 
-    p->keff_tally_tracklength() += p->wgt() * collision_distance * p->macro_xs().nu_fission;
     // Compute collision
     p->event_collide();
 
