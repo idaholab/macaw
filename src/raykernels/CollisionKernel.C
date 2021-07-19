@@ -16,6 +16,7 @@
 #include "openmc/particle_data.h"
 #include "openmc/random_lcg.h"
 #include "openmc/simulation.h"
+#include "openmc/tallies/tally.h"
 
 registerMooseObject("MaCawApp", CollisionKernel);
 
@@ -30,9 +31,9 @@ CollisionKernel::validParams()
 
   params.addRequiredCoupledVar("temperature", "The temperature of the medium.");
   params.addRequiredParam<std::vector<unsigned int>>("blocks",
-                                              "Blocks on which this kernel is defined.");
+                                                     "Blocks on which this kernel is defined.");
   params.addRequiredParam<std::vector<unsigned int>>("materials",
-                                              "OpenMC material ids for each block.");
+                                                     "OpenMC material ids for each block.");
   params.addParam<bool>("verbose", false, "Whether to print collision information");
 
   return params;
@@ -51,11 +52,11 @@ CollisionKernel::CollisionKernel(const InputParameters & params)
   // Build map from subdomains to OpenMC materials
   const auto blocks = getParam<std::vector<unsigned int>>("blocks");
   const auto materials = getParam<std::vector<unsigned int>>("materials");
-  for (unsigned int i=0; i<blocks.size(); i++)
+  for (unsigned int i = 0; i < blocks.size(); i++)
     _block_to_openmc_materials.insert(std::make_pair<int, int>(blocks[i], materials[i]));
 
   // Resize the neutrons objects used to call OpenMC routines and initialize the seeds
-  //TODO optimization: create these neutrons in the study, re-use them everywhere
+  // TODO optimization: create these neutrons in the study, re-use them everywhere
   _particles.resize(libMesh::n_threads());
   for (unsigned int i = 0; i < _particles.size(); i++)
     openmc::initialize_history(_particles[i], i + 1);
@@ -64,17 +65,18 @@ CollisionKernel::CollisionKernel(const InputParameters & params)
 void
 CollisionKernel::onSegment()
 {
-  //TODO Add treatment for (n, 2n) reactions
-
+  // TODO Add treatment for (n, 2n) reactions
+  //std::cout << "# of tallies: " << openmc::model::tallies.size() << std::endl;
   // Use a fake neutron to compute the cross sections
   auto p = &_particles[_tid];
 
+  // resize to account for filters specified in moose
+  p->filter_matches().resize(openmc::model::tally_filters.size());
   p->sqrtkT() = std::sqrt(openmc::K_BOLTZMANN * _T[0]);
   p->material() = _block_to_openmc_materials.at(_current_elem->subdomain_id());
   p->coord(p->n_coord() - 1).cell = 0; // avoids a geometry search
-  p->u() = {currentRay()->direction()(0),
-            currentRay()->direction()(1),
-            currentRay()->direction()(2)};
+  p->u() = {
+      currentRay()->direction()(0), currentRay()->direction()(1), currentRay()->direction()(2)};
   p->E() = currentRay()->auxData(0);
 
   // Reset the OpenMC particle status
@@ -87,8 +89,7 @@ CollisionKernel::onSegment()
   // TODO scores tracklength tallies as well
   // TODO Can we use this??
 
-  const Real collision_distance = -std::log(openmc::prn(p->current_seed())) /
-      p->macro_xs().total;
+  const Real collision_distance = -std::log(openmc::prn(p->current_seed())) / p->macro_xs().total;
 
   // Contribute to the tracklength keff estimator
   p->keff_tally_tracklength() += p->wgt() *
@@ -96,25 +97,28 @@ CollisionKernel::onSegment()
 
   // Shorter than next intersection, ray tracing will take care of moving the
   // particle
-  if (collision_distance > _current_segment_length) {
+  if (collision_distance > _current_segment_length)
+  {
     // p.event_cross_surface();
-    //TODO Score track length tallies
-    //TODO Score surface tallies
+    // TODO Score track length tallies
+    // TODO Score surface tallies
     return;
   }
   else
   {
     // Advance ray (really, move backwards)
-    Point current_position = currentRay()->currentPoint() -
+    Point current_position =
+        currentRay()->currentPoint() -
         (_current_segment_length - collision_distance) * currentRay()->direction();
 
     // Compute collision
     p->event_collide();
 
     if (_verbose)
-      std::cout << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0) << " -> " << p->E() <<
-                   " block " << _current_elem->subdomain_id() << " material " << p->material() << std::endl;
-
+      std::cout << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0)
+                << " -> " << p->E() << " block " << _current_elem->subdomain_id() << " material "
+                << p->material() << std::endl;
+    // std::cout << p->keff_tally_collision() << std::endl;
     // Update Ray direction
     Point new_direction(p->u()[0], p->u()[1], p->u()[2]);
     if (p->event() == openmc::TallyEvent::SCATTER)
