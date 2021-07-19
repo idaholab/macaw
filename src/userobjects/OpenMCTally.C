@@ -32,7 +32,6 @@ OpenMCTally::validParams()
   params.addParam<MooseEnum>("particle_type", particle_types,"particle type to track in tally");
   params.addParam<MooseEnum>("tally_estimator", estimator_types, "Estimator type used for the tally");
   params.addRequiredParam<std::vector<std::string>>("tally_scores","Scores to apply to the tally");
-  //params.addParam<std::vector<openmc::ReactionType>>("tally_reaction_types","MT reactions to tally");
   params.addRequiredParam<std::vector<std::string>>("tally_filters","Filters to apply to the tally");
   params.addParam<std::vector<Real>>("tally_energy_bins","Define energy bins for the tally");
 
@@ -44,7 +43,6 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
   _tally_particle(getParam<MooseEnum>("particle_type")),
   _tally_estimator(params.get<MooseEnum>("tally_estimator")),
   _tally_scores(getParam<std::vector<std::string>>("tally_scores")),
-//  _tally_reaction_types(getParam<std::vector<std::string>>("tally_reaction_types")),
   _tally_filters(getParam<std::vector<std::string>>("tally_filters")),
   _tally_energy_bins(getParam<std::vector<Real>>("tally_energy_bins"))
 {
@@ -77,7 +75,7 @@ OpenMCTally::initialize()
   //create vector of filters to apply to tally
   vector<Filter*> filters;
 
-  std::cout << "Adding " << _tally_filters.size() << " tally filters" << std::endl;
+
   for(int i = 0; i < _tally_filters.size(); ++i){
     //create filter and add to filters vector
     // create takes in string argument
@@ -112,7 +110,7 @@ OpenMCTally::initialize()
 
   // apply scores
   std::cout << "Adding tally scores" << std::endl;
-  model::tallies.back()->set_scores({"kappa-fission"});
+  model::tallies.back()->set_scores(_tally_scores);
 
   // set the tally estimator
   // get rid of switch with enum to string method?
@@ -137,8 +135,7 @@ OpenMCTally::initialize()
       break;
     }
     default:
-      model::tallies.back()->estimator_ = TallyEstimator::COLLISION;
-      // mooseError("Unrecognized estimator");
+      mooseError("Unrecognized estimator");
       // TODO This is being triggered so the input of the estimator must have an issue
   }
 
@@ -146,7 +143,6 @@ OpenMCTally::initialize()
     t->init_results();
   }
 
-  std::cout << "Tally id: " << model::tallies.back()->id_ << std::endl;
 }
 
 void OpenMCTally::execute() {};
