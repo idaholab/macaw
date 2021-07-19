@@ -5,9 +5,14 @@
 # Optional Environment variables
 # MOOSE_DIR        - Root directory of the MOOSE project
 #
-# TODO: -Pass debug flags to OpenMC
-#       -Cleanup all the includes of the OpenMC dependencies
-#       -Figure out problem with devel mode
+# To build:
+# - (debug) add -D_GLIBCXX_DEBUG to openmc Makefile
+# - make clobber_openmc (to remove pugixml found)
+# - make build_openmc
+# - make
+#
+# TODO: -Fix pugixml not found
+#       -Fix debug vectors when used in openmc
 #       -Find how to link libopenmc without LD_LIBRARY_PATH (-Wl,-rpath?)
 # ======================================================================================
 MACAW_DIR       := $(abspath $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))
@@ -30,11 +35,12 @@ else
 endif
 
 # This needs to be exported
-OPENMC_BUILDDIR := $(MACAW_DIR)/build/openmc
-OPENMC_INSTALL_DIR := $(CONTRIB_DIR)/openmc/build
-OPENMC_INCLUDES := -I$(OPENMC_INSTALL_DIR)/include -I$(OPENMC_DIR)/vendor/fmt/include -I$(OPENMC_DIR)/vendor/pugixml/src -I$(OPENMC_DIR)/vendor/xtensor/include -I$(OPENMC_DIR)/vendor/xtl/include -I$(OPENMC_DIR)/vendor/gsl-lite/include -I$(OPENMC_DIR)/include
+OPENMC_BUILDDIR := $(CONTRIB_DIR)/openmc/build
+OPENMC_INSTALL_DIR := $(MACAW_DIR)/build/openmc
+OPENMC_INCLUDES := -I$(OPENMC_DIR)/include -I$(OPENMC_INSTALL_DIR)/include
 OPENMC_LIBDIR := $(OPENMC_INSTALL_DIR)/lib
 OPENMC_LIB := $(OPENMC_LIBDIR)/libopenmc.so
+
 # This is used in $(FRAMEWORK_DIR)/build.mk
 ADDITIONAL_CPPFLAGS := $(HDF5_INCLUDES) $(OPENMC_INCLUDES)
 # ======================================================================================
