@@ -123,12 +123,28 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
   openmc::model::cells.resize(_mesh.nElem());
   std::cout << "Resizing number of OpenMC cells to: " << openmc::model::cells.size() << std::endl;
 
+  //openmc::model::cells[0]->id_ = 0;
+  // std::cout << "size" << openmc::model::cells.size() << std::endl;
+  // for (int i = 0; i < openmc::model::cells.size() - 1; ++i){
+  //   std::cout << i << std::endl;
+  //   openmc::model::cells[i]->id_ = i;
+  // }
+  for (int i = 0; i < openmc::model::cells.size(); ++i)
+  {
+    openmc::model::cells[i] = gsl::make_unique<openmc::CSGCell>();
+    openmc::model::cells[i]->id_ = i;
+  }
+
+
   // resize the number of universes in openmc to the number of subdomains in moose
   std::cout << "Number of Mesh Subdomains: " << _mesh.meshSubdomains().size() << std::endl;
   openmc::model::universes.resize(_mesh.meshSubdomains().size());
   std::cout << "Resizing number of OpenMC universes to: " << openmc::model::universes.size() << std::endl;
 
-  for (int i = 0; i < openmc::model::universes.size(); ++i) openmc::model::universes[i]->id_ = i;
+  for (int i = 0; i < openmc::model::universes.size(); ++i){
+    openmc::model::universes[i] = gsl::make_unique<openmc::Universe>();
+    openmc::model::universes[i]->id_ = i;
+  }
   // does data OK
   // work TODO -> no need here
   // banks TODO -> no need for us
@@ -206,6 +222,7 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
 OpenMCStudy::~OpenMCStudy()
 {
   // Finalize and free up memory
+  std::cout << "Finalizing OpenMC" << std::endl;
   int err = openmc_finalize();
   if (err)
     openmc::fatal_error(openmc_err_msg);

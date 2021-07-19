@@ -5,12 +5,12 @@
     nx = 5
     ny = 5
     nz = 1
-    xmin = -5
-    ymin = -5
-    zmin = -5
-    xmax = 5
-    ymax = 5
-    zmax = 5
+    xmin = -2
+    ymin = -2
+    zmin = -2
+    xmax = 2
+    ymax = 2
+    zmax = 2
   []
   [./add_subdomain]
     input = gmg
@@ -18,7 +18,7 @@
     top_right = '1 1 1'
     bottom_left = '-1 -1 -1'
     block_id = 1
-    block_name = 'center'
+    #block_name = 'center'
   [../]
 []
 
@@ -39,7 +39,7 @@
   type = CollisionKernel
   temperature = temperature
   blocks = "0 1 2"
-  materials = "0 1 2"  # openmc material id minus one !
+  materials = "0 3 2"  # openmc material id minus one !
   #verbose = true
 []
 [RayKernels/u_integral]
@@ -91,6 +91,16 @@
     tally_estimator = 'COLLISION'
     tally_scores = 'kappa-fission'
     tally_filters = 'universe'
+    execute_on = 'initial'
+  []
+
+  [celltally]
+    type = OpenMCTally
+
+    particle_type = 'neutron'
+    tally_estimator = 'COLLISION'
+    tally_scores = 'kappa-fission'
+    tally_filters = 'cell'
     execute_on = 'initial'
   []
 []
