@@ -268,7 +268,8 @@ OpenMCStudy::defineRays()
   //TODO separate batches and generations
   openmc::simulation::current_batch = _t_step;
   openmc::simulation::current_gen = 1;
-  openmc::Particle neutron;
+  openmc::Particle* neutron_p = new openmc::Particle();
+  openmc::Particle & neutron = *neutron_p;
 
   // Loop over particles. create the rays
   // This needs to be done over all processes, since we do not know where the particle will
@@ -301,8 +302,10 @@ OpenMCStudy::defineRays()
     ray->auxData(1) = neutron.wgt();
 
     _rays.emplace_back(std::move(ray));
+    std::cout << i << std::endl;
   }
 
+  delete neutron_p;
 }
 
 // void OpenMCStudy::execute()

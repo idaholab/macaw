@@ -76,7 +76,7 @@ OpenMCTally::initialize()
   vector<Filter*> filters;
 
 
-  for(int i = 0; i < _tally_filters.size(); ++i){
+  for(unsigned int i = 0; i < _tally_filters.size(); ++i){
     //create filter and add to filters vector
     // create takes in string argument
     // make filter param MooseEnum?
@@ -110,7 +110,7 @@ OpenMCTally::initialize()
 
   // apply scores
   std::cout << "Adding tally scores" << std::endl;
-  model::tallies.back()->set_scores(_tally_scores);
+  // model::tallies.back()->set_scores(_tally_scores);
 
   // set the tally estimator
   // get rid of switch with enum to string method?
@@ -136,7 +136,6 @@ OpenMCTally::initialize()
     }
     default:
       mooseError("Unrecognized estimator");
-      // TODO This is being triggered so the input of the estimator must have an issue
   }
 
   for (auto& t : model::tallies) {
@@ -145,8 +144,8 @@ OpenMCTally::initialize()
 
 }
 
-void OpenMCTally::execute() {};
+void OpenMCTally::execute() {}
 
-void OpenMCTally::finalize() {};
+void OpenMCTally::finalize() {}
 
-void OpenMCTally::threadJoin() {};
+void OpenMCTally::threadJoin() {}
