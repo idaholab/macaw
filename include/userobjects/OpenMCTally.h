@@ -49,6 +49,10 @@ protected:
 
   std::vector<Real> _tally_energy_bins;
 
+  const int _tally_id;
+
+  std::vector<int> _filter_ids;
+
   //  virtual unsigned long getElementalValueLong(dof_id_type /*element_id*/,
   //                                              const std::string & /*field_name*/) const
   //  {
