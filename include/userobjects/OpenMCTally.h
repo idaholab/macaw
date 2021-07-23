@@ -10,7 +10,6 @@
 #pragma once
 
 #include "GeneralUserObject.h"
-#include "MacawEnums.h"
 
 #include "openmc/constants.h"
 
@@ -39,6 +38,8 @@ public:
   void threadJoin();
 
 protected:
+  int _tally_id;
+
   const MooseEnum _tally_particle;
 
   const MooseEnum _tally_estimator;
@@ -47,11 +48,9 @@ protected:
 
   std::vector<std::string> _tally_filters;
 
-  std::vector<Real> _tally_energy_bins;
-
-  const int _tally_id;
-
   std::vector<int> _filter_ids;
+
+  std::vector<Real> _tally_energy_bins;
 
   //  virtual unsigned long getElementalValueLong(dof_id_type /*element_id*/,
   //                                              const std::string & /*field_name*/) const
