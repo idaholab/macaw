@@ -45,8 +45,19 @@ OpenMCStudy::validParams()
   params.addClassDescription("Runs OpenMC like a bawsse.");
   params.addParam<bool>("verbose", true, "Whether to output the current stage of the simulation");
 
+  // By default, let's not verify Rays in optimized modes because it's so expensive
+#ifndef NDEBUG
+  params.set<bool>("verify_rays", false);
+#endif
+  // We don't typically have internal sidesets in Monte Carlo
+  // params.set<bool>("use_internal_sidesets") = false;
+  // params.suppressParameter<bool>("use_internal_sidesets");
   // Neutrons dont need to be named
   params.addPrivateParam<bool>("_use_ray_registration", false);
+  // We manage banking Rays as needed on our own
+  params.set<bool>("_bank_rays_on_completion") = false;
+  // Subdomain setup does not depend on individual Rays in MOC
+  params.set<bool>("_ray_dependent_subdomain_setup") = false;
 
   return params;
 }
@@ -290,6 +301,9 @@ OpenMCStudy::defineRays()
   {
     // Get a ray from the study
     std::shared_ptr<Ray> ray = acquireRay();
+
+    // if (i == 10)
+      // std::cout << ray->getInfo() << std::endl;
 
     // Have OpenMC initialize all the information
     openmc::initialize_history(neutron, i + 1);
