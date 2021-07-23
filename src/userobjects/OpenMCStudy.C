@@ -64,47 +64,48 @@ OpenMCStudy::validParams()
 
 OpenMCStudy::OpenMCStudy(const InputParameters & params)
   : RayTracingStudy(params),
-  _rays(declareRestartableDataWithContext<std::vector<std::shared_ptr<Ray>>>("rays", this)),
-  _local_rays(
-      declareRestartableDataWithContext<std::vector<std::shared_ptr<Ray>>>("local_rays", this)),
-  _claim_rays(*this, _rays, _local_rays, true),
-  _claim_rays_timer(registerTimedSection("claimRays", 1)),
-  _define_rays_timer(registerTimedSection("defineRays", 1)),
-  _verbose(getParam<bool>("verbose"))
+    _rays(declareRestartableDataWithContext<std::vector<std::shared_ptr<Ray>>>("rays", this)),
+    _local_rays(
+        declareRestartableDataWithContext<std::vector<std::shared_ptr<Ray>>>("local_rays", this)),
+    _claim_rays(*this, _rays, _local_rays, true),
+    _claim_rays_timer(registerTimedSection("claimRays", 1)),
+    _define_rays_timer(registerTimedSection("defineRays", 1)),
+    _verbose(getParam<bool>("verbose"))
 {
+  /*
+  This class doesnt really need to get anything that can be in OpenMC input files:
+  - materials
+  - settings (number of neutrons, batches, etc)
+  - even tallies (for now, we'll just replicated)!
 
-/*
-This class doesnt really need to get anything that can be in OpenMC input files:
-- materials
-- settings (number of neutrons, batches, etc)
-- even tallies (for now, we'll just replicated)!
+  Its real objective should be to call each part of openmc_run, and replace just the core stuff with
+  'Ray' instead of neutrons. Maybe we could even make a subclass of 'Particle, neutron', that also
+  inherits from 'Ray' so that both OpenMC and MOOSE know what to do with it
 
-Its real objective should be to call each part of openmc_run, and replace just the core stuff with 'Ray' instead of neutrons.
-Maybe we could even make a subclass of 'Particle, neutron', that also inherits from 'Ray' so that both OpenMC and MOOSE know what to do with it
+  There are a few transfers we want to make:
+  - temperature, MAYBE. It could be handled on moose side! (and sent to OpenMC via Particle T
+  attribute)
+  - power distribution tally, from an OpenMC tally to MOOSE
 
-There are a few transfers we want to make:
-- temperature, MAYBE. It could be handled on moose side! (and sent to OpenMC via Particle T attribute)
-- power distribution tally, from an OpenMC tally to MOOSE
+  LONG TERM:
+  - moose need to handle the tallies, because we need domain decomposition
+  - more than 1 batch ? If it's annoying
 
-LONG TERM:
-- moose need to handle the tallies, because we need domain decomposition
-- more than 1 batch ? If it's annoying
-
-How to handle OpenMC physics calls
-// save the OpenMC neutron in AuxData
-// OR
-// make a class that inherits from both
-// OR
-// use fake neutrons to call the routines and move results over
-// OR
-// use fake neutrons created once and use references to move results over
-*/
+  How to handle OpenMC physics calls
+  // save the OpenMC neutron in AuxData
+  // OR
+  // make a class that inherits from both
+  // OR
+  // use fake neutrons to call the routines and move results over
+  // OR
+  // use fake neutrons created once and use references to move results over
+  */
 
   if (_verbose)
     _console << "Initializing OpenMC simulation" << std::endl;
 
   // Initialize run
-  char * argv[1] = {(char*)"openmc"};
+  char * argv[1] = {(char *)"openmc"};
   int err = openmc_init(1, argv, &_communicator.get());
   if (err)
     openmc::fatal_error(openmc_err_msg);
@@ -302,8 +303,8 @@ OpenMCStudy::defineRays()
     // Get a ray from the study
     std::shared_ptr<Ray> ray = acquireRay();
 
-    // if (i == 10)
-      // std::cout << ray->getInfo() << std::endl;
+    // Temporary print to understand why rays arent fully re-used
+    // _console << ray->getInfo() << std::endl;
 
     // Have OpenMC initialize all the information
     openmc::initialize_history(neutron, i + 1);

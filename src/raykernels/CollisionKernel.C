@@ -70,7 +70,7 @@ CollisionKernel::initialSetup()
     _console << "Kernel initial setup" << std::endl;
 
   // Check that all materials do exist in OpenMC, otherwise it will crash at XS calculation
-  for (auto& m : _block_to_openmc_materials)
+  for (auto & m : _block_to_openmc_materials)
   {
     auto search = openmc::model::material_map.find(m.second);
     if (search == openmc::model::material_map.end())
@@ -135,8 +135,8 @@ CollisionKernel::onSegment()
 
     if (_verbose)
       _console << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0)
-                << " -> " << p->E() << " block " << _current_elem->subdomain_id() << " material "
-                << p->material() << std::endl;
+               << " -> " << p->E() << " block " << _current_elem->subdomain_id() << " material "
+               << p->material() << std::endl;
 
     // Update Ray direction
     Point new_direction(p->u()[0], p->u()[1], p->u()[2]);

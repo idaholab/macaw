@@ -46,7 +46,7 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
   _tally_filters(getParam<std::vector<std::string>>("tally_filters")),
   _tally_energy_bins(getParam<std::vector<Real>>("tally_energy_bins"))
 {
-  std::cout << _tally_estimator << std::endl;
+  _console << _tally_estimator << std::endl;
   if (_tally_particle != 0) {
     paramError("particle_type", "Only neutrons are currently supported.");
   }
@@ -66,7 +66,7 @@ OpenMCTally::initialize()
   using namespace openmc;
 
   // create a new tally with auto id
-  std::cout << "Creating new tally" << std::endl;
+  _console << "Creating new tally" << std::endl;
   model::tallies.push_back(make_unique<Tally>(C_NONE));
 
   // TODO: check for a mesh parameter and add mesh if exists
@@ -75,8 +75,8 @@ OpenMCTally::initialize()
   //create vector of filters to apply to tally
   vector<Filter*> filters;
 
-
-  for(unsigned int i = 0; i < _tally_filters.size(); ++i){
+  for (unsigned int i = 0; i < _tally_filters.size(); ++i)
+  {
     //create filter and add to filters vector
     // create takes in string argument
     // make filter param MooseEnum?
@@ -85,13 +85,13 @@ OpenMCTally::initialize()
     Filter* filter_ptr = Filter::create(_tally_filters.at(i), C_NONE);
 
     if (filter_ptr->type() == "energy" ){
-      std::cout << " Adding energy filter" << std::endl;
+      _console << " Adding energy filter" << std::endl;
 
       EnergyFilter* energy_filter = dynamic_cast<EnergyFilter*>(filter_ptr);
       energy_filter->set_bins(_tally_energy_bins);
 
     } else if (filter_ptr->type() == "particle"){
-      std::cout << " Adding particle filter" << std::endl;
+      _console << " Adding particle filter" << std::endl;
 
       ParticleFilter* particle_filter = dynamic_cast<ParticleFilter*>(filter_ptr);
       // must be put in a vector to pass into set_particles
@@ -103,18 +103,17 @@ OpenMCTally::initialize()
       mooseError("Unrecognized filter");
 
     filters.push_back(filter_ptr);
-
   }
   // appply filters to the new tally
   model::tallies.back()->set_filters(filters);
 
   // apply scores
-  std::cout << "Adding tally scores" << std::endl;
+  _console << "Adding tally scores" << std::endl;
   // model::tallies.back()->set_scores(_tally_scores);
 
   // set the tally estimator
   // get rid of switch with enum to string method?
-  std::cout << "Adding tally estimator" << std::endl;
+  _console << "Adding tally estimator" << std::endl;
   switch (_tally_estimator)
   {
     case 0:
@@ -144,8 +143,17 @@ OpenMCTally::initialize()
 
 }
 
-void OpenMCTally::execute() {}
+void
+OpenMCTally::execute()
+{
+}
 
-void OpenMCTally::finalize() {}
+void
+OpenMCTally::finalize()
+{
+}
 
-void OpenMCTally::threadJoin() {}
+void
+OpenMCTally::threadJoin()
+{
+}
