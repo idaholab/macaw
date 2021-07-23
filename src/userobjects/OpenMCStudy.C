@@ -26,6 +26,7 @@
 #include "openmc/settings.h"
 #include "openmc/particle.h"
 #include "openmc/cell.h"
+#include "openmc/geometry.h"
 
 // additional includes if want to decompose initialization
 #include "openmc/simulation.h"
@@ -101,33 +102,49 @@ How to handle OpenMC physics calls
     mooseError("Requested run mode is currently not supported by MaCaw");
 
   openmc_simulation_init();
+
+  openmc::model::n_coord_levels = 1;
   // resize the number of cells in openmc to the number of elements in moose
   std::cout << "Number of Mesh Elements: " << _mesh.nElem() << std::endl;
   openmc::model::cells.resize(_mesh.nElem());
   std::cout << "Resizing number of OpenMC cells to: " << openmc::model::cells.size() << std::endl;
 
-  //openmc::model::cells[0]->id_ = 0;
-  // std::cout << "size" << openmc::model::cells.size() << std::endl;
-  // for (int i = 0; i < openmc::model::cells.size() - 1; ++i){
-  //   std::cout << i << std::endl;
-  //   openmc::model::cells[i]->id_ = i;
-  // }
+  openmc::model::cell_map.clear();
+
   for (int i = 0; i < openmc::model::cells.size(); ++i)
   {
     openmc::model::cells[i] = gsl::make_unique<openmc::CSGCell>();
     openmc::model::cells[i]->id_ = i;
+    openmc::model::cells[i]->universe_ = _mesh.elemPtr(i)->subdomain_id();
+    openmc::model::cell_map[i] = i;
   }
 
+  for (int i = 0; i < openmc::model::cells.size(); i++) {
+    int32_t uid = openmc::model::cells[i]->universe_;
+    auto it = openmc::model::universe_map.find(uid);
+    if (it == openmc::model::universe_map.end()) {
+      openmc::model::universes.push_back(gsl::make_unique<openmc::Universe>());
+      openmc::model::universes.back()->id_ = uid;
+      openmc::model::universes.back()->cells_.push_back(i);
+      openmc::model::universe_map[uid] = openmc::model::universes.size() - 1;
+    } else {
+      openmc::model::universes[it->second]->cells_.push_back(i);
+    }
+  }
 
+/*
   // resize the number of universes in openmc to the number of subdomains in moose
   std::cout << "Number of Mesh Subdomains: " << _mesh.meshSubdomains().size() << std::endl;
   openmc::model::universes.resize(_mesh.meshSubdomains().size());
   std::cout << "Resizing number of OpenMC universes to: " << openmc::model::universes.size() << std::endl;
 
+
+
   for (int i = 0; i < openmc::model::universes.size(); ++i){
     openmc::model::universes[i] = gsl::make_unique<openmc::Universe>();
     openmc::model::universes[i]->id_ = i;
   }
+  */
   // does data OK
   // work TODO -> no need here
   // banks TODO -> no need for us
