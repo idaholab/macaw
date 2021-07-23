@@ -22,6 +22,8 @@ public:
 
   static InputParameters validParams();
 
+  void initialSetup();
+
   void onSegment();
 
 protected:

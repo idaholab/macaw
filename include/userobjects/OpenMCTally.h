@@ -10,7 +10,6 @@
 #pragma once
 
 #include "GeneralUserObject.h"
-#include "MacawEnums.h"
 
 #include "openmc/constants.h"
 

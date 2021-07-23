@@ -106,5 +106,10 @@ ADDITIONAL_LIBS := \
 	-lhdf5_hl
 include            $(FRAMEWORK_DIR)/app.mk
 
+# app_objects are defined in moose.mk and built according to the rules in build.mk
+# We need to build these first so we get include dirs
+$(app_objects): build_openmc
+$(test_objects): build_openmc
+
 ###############################################################################
 # Additional special case targets should be added here
