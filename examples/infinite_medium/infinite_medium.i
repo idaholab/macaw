@@ -40,7 +40,7 @@
   type = CollisionKernel
   temperature = temperature
   blocks = "0 1 2"
-  materials = "0 0 0"  # openmc material id minus one !
+  materials = "1 1 1" # openmc material id
   # verbose = true
 []
 [RayKernels/u_integral]
@@ -77,6 +77,8 @@
 [Outputs]
   exodus = false
   csv = true
+
+  hide = 'num_rays'
 
   [rays]
     type = RayTracingExodus
@@ -126,10 +128,27 @@
     postprocessor = total_time
     execute_on = 'INITIAL TIMESTEP_END'
   []
+
+  # Neutrons per second to compare to openmc
+  [num_rays]
+    type = VectorPostprocessorComponent
+    vectorpostprocessor = per_proc_ray_tracing
+    index = 0
+    vector_name = rays_traced
+  []
+  [total_num_rays]
+    type = CumulativeValuePostprocessor
+    postprocessor = num_rays
+  []
+  [neutrons_per_s]
+    type = ParsedPostprocessor
+    pp_names = 'total_num_rays total_time'
+    function = 'total_num_rays / total_time'
+  []
 []
 
 [VectorPostprocessors/per_proc_ray_tracing]
   type = PerProcessorRayTracingResultsVectorPostprocessor
-  execute_on = FINAL
+  execute_on = TIMESTEP_END
   study = study
 []
