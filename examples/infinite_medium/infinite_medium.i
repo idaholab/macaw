@@ -4,7 +4,7 @@
     dim = 3
     nx = 5
     ny = 5
-    nz = 1
+    nz = 5
     xmin = -5
     ymin = -5
     zmin = -5
@@ -30,6 +30,7 @@
 
 # Main things we care about for the coupling
 [Variables/temperature]
+  initial_condition = 300
 []
 
 [AuxVariables/power]
@@ -39,7 +40,7 @@
   type = CollisionKernel
   temperature = temperature
   blocks = "0 1 2"
-  materials = "0 1 2"  # openmc material id minus one !
+  materials = "0 0 0"  # openmc material id minus one !
   # verbose = true
 []
 [RayKernels/u_integral]
@@ -76,6 +77,7 @@
 [Outputs]
   exodus = false
   csv = true
+
   [rays]
     type = RayTracingExodus
     study = study
@@ -97,8 +99,9 @@
   []
 []
 
+# To measure performance
 [Postprocessors]
-  [total]
+  [total_mem]
     type = MemoryUsage
     execute_on = 'INITIAL TIMESTEP_END'
   []
@@ -123,4 +126,10 @@
     postprocessor = total_time
     execute_on = 'INITIAL TIMESTEP_END'
   []
+[]
+
+[VectorPostprocessors/per_proc_ray_tracing]
+  type = PerProcessorRayTracingResultsVectorPostprocessor
+  execute_on = FINAL
+  study = study
 []

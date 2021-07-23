@@ -33,27 +33,44 @@ def get_args():
     parser.add_argument('--write', action='store_true', help="Toggle writing to results directory")
     return parser.parse_args()
 
-def execute(infile, outfile, mode, samples, mpi=None, replicates=1, write=True):
+def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak', parallel_mode='openmp'):
     data = collections.defaultdict(list)
     if mpi is None: mpi = [1]*len(samples)
     exe = mooseutils.find_moose_executable_recursive()
     for n_cores, n_samples in zip(mpi, samples):
-        if True:
+
+        # Select parallelism type
+        if parallel_mode == 'openmp':
             n_threads = n_cores
-            n_cores = 1
-        else:
+            n_mpi = 1
+        elif parallel_mode == 'mpi':
             n_threads = 1
-        cmd = ['mpiexec', '-n', str(n_cores), exe, '-i', infile, '--num-threads', str(n_threads),
-               'Executioner/num_steps={}'.format(replicates),
+            n_mpi = n_cores
+        else:
+            raise ValueError('Unknown parallel mode', parallel_mode)
+
+        # Build command
+        cmd = ['mpiexec', '-n', str(n_mpi), exe, '-i', infile, '--n-threads', str(n_threads),
                'Outputs/file_base={}'.format(mode)]
+
+        if scaling == 'strong':
+            cmd.append('Mesh/gmg/nx={}'.format(5 * scale))
+            cmd.append('Mesh/gmg/ny={}'.format(5 * scale))
+            cmd.append('Mesh/gmg/nz={}'.format(5 * scale))
+            cmd.append('Mesh/gmg/xmin={}'.format(-5 * scale))
+            cmd.append('Mesh/gmg/ymin={}'.format(-5 * scale))
+            cmd.append('Mesh/gmg/zmin={}'.format(-5 * scale))
+            cmd.append('Mesh/gmg/xmax={}'.format(5 * scale))
+            cmd.append('Mesh/gmg/ymax={}'.format(5 * scale))
+            cmd.append('Mesh/gmg/zmax={}'.format(5 * scale))
 
         print(' '.join(cmd))
         out = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         local = pandas.read_csv('{}.csv'.format(mode))
-        data['n_ranks'].append(n_cores)
+        data['n_cores'].append(n_cores)
         data['n_samples'].append(n_samples)
-        data['mem_total'].append(local['total'].iloc[1])
+        data['mem_total'].append(local['total_mem'].iloc[1])
         data['mem_per_proc'].append(local['per_proc'].iloc[1])
         data['mem_max_proc'].append(local['max_proc'].iloc[1])
         data['run_time'].append(statistics.mean(local['run_time'].iloc[1:]))
@@ -132,12 +149,15 @@ if __name__ == '__main__':
     input_file = 'infinite_medium.i'
     args = get_args()
 
+    if (not args.run or not args.write):
+        print("\nAre you missing the run and write flags on purpose?\n")
+
     # Memory Parallel
-    if args.run:
-        prefix = 'full_solve_memory_parallel'
-        samples = [args.base*2**n for n in range(args.memory_levels)]
-        mpi = [args.memory_cores]*len(samples)
-        execute(input_file, prefix, 'normal', samples, mpi, args.replicates, args.write)
+    # if args.run:
+    #     prefix = 'full_solve_memory_parallel'
+    #     samples = [args.base*2**n for n in range(args.memory_levels)]
+    #     mpi = [args.memory_cores]*len(samples)
+    #     execute(input_file, prefix, 'normal', samples, mpi, args.replicates, args.write)
 
     # Weak scale
     if args.run:
@@ -146,14 +166,41 @@ if __name__ == '__main__':
         samples = [args.base*m for m in mpi]
         execute(input_file, prefix, 'normal', samples, mpi, args.replicates, args.write)
 
-    # Parallel time and memory plots
-    plot('full_solve_memory_parallel', 'time',
-         xname='n_samples', xlabel='Number of Simulations',
-         yname='run_time', ylabel='Time (sec.)', yerr=('run_time_min', 'run_time_max'))
+    # Strong scale
+    if args.run:
+        prefix = 'full_solve_strong_scale'
+        mpi = [2**n for n in range(args.weak_levels)]
+        samples = [args.base*m for m in mpi]
+        execute(input_file, prefix, 'normal', samples, mpi, args.replicates, args.write, scaling='strong')
 
-    plot('full_solve_memory_parallel', 'memory',
-         xname='n_samples', xlabel='Number of Simulations',
-         yname='mem_per_proc', ylabel='Memory (MiB)')
+    # Parallel time and memory plots
+    # if False:
+    #     plot('full_solve_memory_parallel', 'time',
+    #          xname='n_samples', xlabel='Number of Simulations',
+    #          yname='run_time', ylabel='Time (sec.)', yerr=('run_time_min', 'run_time_max'))
+    #
+    #     plot('full_solve_memory_parallel', 'memory',
+    #          xname='n_samples', xlabel='Number of Simulations',
+    #          yname='mem_per_proc', ylabel='Memory (MiB)')
+
+    if True:
+        plot('full_solve_weak_scale', 'time',
+             xname='n_cores', xlabel='Number of cores',
+             yname='run_time', ylabel='Time (sec.)', yerr=('run_time_min', 'run_time_max'))
+
+        plot('full_solve_weak_scale', 'memory',
+             xname='n_cores', xlabel='Number of cores',
+             yname='mem_per_proc', ylabel='Memory (MiB)')
+
+    if True:
+        plot('full_solve_strong_scale', 'time',
+             xname='n_cores', xlabel='Number of cores',
+             yname='run_time', ylabel='Time (sec.)', yerr=('run_time_min', 'run_time_max'))
+
+        plot('full_solve_strong_scale', 'memory',
+             xname='n_cores', xlabel='Number of cores',
+             yname='mem_per_proc', ylabel='Memory (MiB)')
+
 
     # Weak scaling table
     # table('full_solve_weak_scale')
