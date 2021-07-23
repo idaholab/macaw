@@ -122,9 +122,9 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
 
   openmc::model::n_coord_levels = 1;
   // resize the number of cells in openmc to the number of elements in moose
-  std::cout << "Number of Mesh Elements: " << _mesh.nElem() << std::endl;
+  _console << "Number of Mesh Elements: " << _mesh.nElem() << std::endl;
   openmc::model::cells.resize(_mesh.nElem());
-  std::cout << "Resizing number of OpenMC cells to: " << openmc::model::cells.size() << std::endl;
+  _console << "Resizing number of OpenMC cells to: " << openmc::model::cells.size() << std::endl;
 
   openmc::model::cell_map.clear();
 
@@ -151,9 +151,9 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
 
 /*
   // resize the number of universes in openmc to the number of subdomains in moose
-  std::cout << "Number of Mesh Subdomains: " << _mesh.meshSubdomains().size() << std::endl;
+  _console << "Number of Mesh Subdomains: " << _mesh.meshSubdomains().size() << std::endl;
   openmc::model::universes.resize(_mesh.meshSubdomains().size());
-  std::cout << "Resizing number of OpenMC universes to: " << openmc::model::universes.size() << std::endl;
+  _console << "Resizing number of OpenMC universes to: " << openmc::model::universes.size() << std::endl;
 
 
 
@@ -239,7 +239,7 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
 OpenMCStudy::~OpenMCStudy()
 {
   // Finalize and free up memory
-  std::cout << "Finalizing OpenMC" << std::endl;
+  _console << "Finalizing OpenMC" << std::endl;
   int err = openmc_finalize();
   if (err)
     openmc::fatal_error(openmc_err_msg);

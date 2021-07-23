@@ -71,7 +71,7 @@ OpenMCTally::initialize()
   using namespace openmc;
 
   // create a new tally with specified id
-  std::cout << "Creating new tally" << std::endl;
+  _console << "Creating new tally" << std::endl;
   model::tallies.push_back(make_unique<Tally>(_tally_id));
 
   // TODO: check for a mesh parameter and add mesh if exists
@@ -82,7 +82,7 @@ OpenMCTally::initialize()
 
   for (unsigned int i = 0; i < _tally_filters.size(); ++i)
   {
-    //create filter and add to filters vector
+    // create filter and add to filters vector
     // create takes in string argument
 
     Filter* filter_ptr = Filter::create(_tally_filters.at(i), _filter_ids.at(i));
@@ -103,7 +103,7 @@ OpenMCTally::initialize()
       particle_filter->set_particles(types);
 
     } else if (filter_ptr->type() == "universe"){
-      std::cout << " Adding universe filter" << std::endl;
+      _console << " Adding universe filter" << std::endl;
 
       UniverseFilter* universe_filter = dynamic_cast<UniverseFilter*>(filter_ptr);
 
@@ -114,7 +114,7 @@ OpenMCTally::initialize()
       universe_filter->set_universes(universe_ids);
 
     } else if (filter_ptr->type() == "cell"){
-      std::cout << " Adding cell filter" << std::endl;
+      _console << " Adding cell filter" << std::endl;
 
       CellFilter* cell_filter = dynamic_cast<CellFilter*>(filter_ptr);
 
