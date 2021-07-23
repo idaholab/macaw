@@ -43,8 +43,9 @@ OpenMCStudy::validParams()
 {
   auto params = RayTracingStudy::validParams();
   params.addClassDescription("Runs OpenMC like a bawsse.");
+  params.addParam<bool>("verbose", true, "Whether to output the current stage of the simulation");
 
-  // Neutrons dont really need names?
+  // Neutrons dont need to be named
   params.addPrivateParam<bool>("_use_ray_registration", false);
 
   return params;
@@ -57,7 +58,8 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
       declareRestartableDataWithContext<std::vector<std::shared_ptr<Ray>>>("local_rays", this)),
   _claim_rays(*this, _rays, _local_rays, true),
   _claim_rays_timer(registerTimedSection("claimRays", 1)),
-  _define_rays_timer(registerTimedSection("defineRays", 1))
+  _define_rays_timer(registerTimedSection("defineRays", 1)),
+  _verbose(getParam<bool>("verbose"))
 {
 
 /*
@@ -87,6 +89,9 @@ How to handle OpenMC physics calls
 // use fake neutrons created once and use references to move results over
 */
 
+  if (_verbose)
+    _console << "Initializing OpenMC simulation" << std::endl;
+
   // Initialize run
   char * argv[1] = {(char*)"openmc"};
   int err = openmc_init(1, argv, &_communicator.get());
@@ -109,6 +114,8 @@ How to handle OpenMC physics calls
   // TODO Initialize this nicer
   registerRayAuxData("energy");
   registerRayAuxData("weight");
+  registerRayAuxData("n_progeny");
+  registerRayAuxData("id");
 
   // Set the number of steps of the Transient executioner as the number of batches
   if (dynamic_cast<Transient *>(_app.getExecutioner()))
@@ -178,13 +185,13 @@ OpenMCStudy::~OpenMCStudy()
   int err = openmc_finalize();
   if (err)
     openmc::fatal_error(openmc_err_msg);
-
-  // ~RayTracingStudy();
 }
 
-void OpenMCStudy::generateRays()
+void
+OpenMCStudy::generateRays()
 {
-  std::cout << "/////////// GENERATING NEW RAYS /////////" << std::endl;
+  if (_verbose)
+    _console << "Generating new rays" << std::endl;
 
   // Create all the rays, place them in _rays
   defineRaysInternal();
@@ -209,6 +216,9 @@ void OpenMCStudy::generateRays()
 void
 OpenMCStudy::meshChanged()
 {
+  if (_verbose)
+    _console << "Adapting to mesh changes" << std::endl;
+
   RayTracingStudy::meshChanged();
 
   // Invalidate all of the old starting info because we can't be sure those elements still exist
@@ -254,12 +264,14 @@ OpenMCStudy::defineRaysInternal()
   for (const auto & ray : _rays)
     if (!ray)
       mooseError("A nullptr Ray was found in _rays after defineRays().");
-
 }
 
 void
 OpenMCStudy::defineRays()
 {
+  if (_verbose)
+    _console << "Defining " << openmc::simulation::work_per_rank << " rays" << std::endl;
+
   // Initialize total weight and tallies list
   openmc::initialize_batch();
   openmc::initialize_generation();
@@ -268,14 +280,13 @@ OpenMCStudy::defineRays()
   //TODO separate batches and generations
   openmc::simulation::current_batch = _t_step;
   openmc::simulation::current_gen = 1;
-  openmc::Particle* neutron_p = new openmc::Particle();
-  openmc::Particle & neutron = *neutron_p;
+  openmc::Particle neutron;
 
   // Loop over particles. create the rays
   // This needs to be done over all processes, since we do not know where the particle will
   // be created.
   //TODO OpenMP parallelism
-  for (int64_t i = 0; i < openmc::simulation::source_bank.size(); ++i)
+  for (int64_t i = 0; i < openmc::simulation::work_per_rank; ++i)
   {
     // Get a ray from the study
     std::shared_ptr<Ray> ray = acquireRay();
@@ -289,6 +300,16 @@ OpenMCStudy::defineRays()
       various indexes, tally derivatives etc
     */
 
+    // Store neutron information
+    ray->auxData(0) = neutron.E();
+    ray->auxData(1) = neutron.wgt();
+
+    // Reset number of progeny particles
+    ray->auxData(2) = 0;
+
+    // Keep track of openmc particle id
+    ray->auxData(3) = neutron.id();
+
     // Set starting information
     Point start(neutron.r()[0], neutron.r()[1], neutron.r()[2]);
     Point direction(neutron.u()[0], neutron.u()[1], neutron.u()[2]);
@@ -297,28 +318,25 @@ OpenMCStudy::defineRays()
     ray->setStart(start);
     ray->setStartingDirection(direction);
 
-    // Store neutron information
-    ray->auxData(0) = neutron.E();
-    ray->auxData(1) = neutron.wgt();
-
     _rays.emplace_back(std::move(ray));
-    std::cout << i << std::endl;
   }
-
-  delete neutron_p;
 }
 
-// void OpenMCStudy::execute()
-// {
-//   std::cout << "In execute" << std::endl;
-//   // This may be needed to handle the batching of neutrons
-//
-// }
-
-void OpenMCStudy::postExecuteStudy()
+void
+OpenMCStudy::execute()
 {
+  if (_verbose)
+    _console << "Executing study" << std::endl;
+  RayTracingStudy::execute();
+}
+
+void
+OpenMCStudy::postExecuteStudy()
+{
+  if (_verbose)
+    _console << "Finalizing generations and batches" << std::endl;
+
   // Reduce global tallies, sort and distribute the fission bank
-  //TODO: Not much need to distribute the fission bank, with the claiming process
   openmc::finalize_generation();
 
   // Reduce all tallies, write state/source_point, run CMFD,

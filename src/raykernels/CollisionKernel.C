@@ -12,6 +12,7 @@
 // openmc includes
 #include "openmc/capi.h"
 #include "openmc/constants.h"
+#include "openmc/material.h"
 #include "openmc/particle.h"
 #include "openmc/particle_data.h"
 #include "openmc/random_lcg.h"
@@ -55,9 +56,6 @@ CollisionKernel::CollisionKernel(const InputParameters & params)
   for (unsigned int i = 0; i < blocks.size(); i++)
     _block_to_openmc_materials.insert(std::make_pair<int, int>(blocks[i], materials[i]));
 
-  // Check that all materials do exist in OpenMC, otherwise it will crash at XS calculation
-
-
   // Resize the neutrons objects used to call OpenMC routines and initialize the seeds
   // TODO optimization: create these neutrons in the study, re-use them everywhere
   _particles.resize(libMesh::n_threads());
@@ -70,6 +68,14 @@ CollisionKernel::initialSetup()
 {
   if (_verbose)
     _console << "Kernel initial setup" << std::endl;
+
+  // Check that all materials do exist in OpenMC, otherwise it will crash at XS calculation
+  for (auto& m : _block_to_openmc_materials)
+  {
+    auto search = openmc::model::material_map.find(m.second);
+    if (search == openmc::model::material_map.end())
+      mooseError("Could not find material ", m.second, " in OpenMC materials.");
+  }
 }
 
 void
@@ -81,7 +87,7 @@ CollisionKernel::onSegment()
   // resize to account for filters specified in moose
   p->filter_matches().resize(openmc::model::tally_filters.size());
   p->sqrtkT() = std::sqrt(openmc::K_BOLTZMANN * _T[0]);
-  p->material() = _block_to_openmc_materials.at(_current_elem->subdomain_id());
+  p->material() = _block_to_openmc_materials.at(_current_elem->subdomain_id()) - 1;
   p->coord(p->n_coord() - 1).cell = 0; // avoids a geometry search
   p->u() = {
       currentRay()->direction()(0), currentRay()->direction()(1), currentRay()->direction()(2)};
