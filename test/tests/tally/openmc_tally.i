@@ -18,7 +18,6 @@
     top_right = '0.5 0.5 2.5'
     bottom_left = '-0.5 -0.5 -2.5'
     block_id = 1
-    #block_name = 'center'
   [../]
 []
 
@@ -42,13 +41,8 @@
   type = CollisionKernel
   temperature = temperature
   blocks = "0 1 2"
-  materials = "0 3 2"  # openmc material id minus one !
+  materials = "1 4 3"  # openmc material id minus one !
   verbose = true
-[]
-[RayKernels/u_integral]
-  type = VariableIntegralRayKernel
-  variable = temperature
-  # rays = 'diag right_up'
 []
 
 [RayBCs]
@@ -77,20 +71,16 @@
 
   [tally]
     type = OpenMCTally
-
     particle_type = 'neutron'
     tally_estimator = 'COLLISION'
     tally_scores = 'flux scatter (n,fission) 16'
     tally_filters = 'energy particle'
     tally_energy_bins = '1e-5 1e3 2e7'
-
     execute_on = 'initial'
   []
 
   [univtally]
     type = OpenMCTally
-
-
     particle_type = 'neutron'
     tally_estimator = 'COLLISION'
     tally_scores = 'kappa-fission'
@@ -118,57 +108,22 @@
 [Outputs]
   exodus = true
   csv = true
-  # [rays]
-  #   type = RayTracingExodus
-  #   study = study
-  #   output_data = true # enable for data output
-  #   # output_data_nodal = true # enable for nodal data output
-  #   output_aux_data = true
-  #   execute_on = final
-  # []
 []
 
 # To look at domain decomposition
 [AuxVariables/domains]
-
 []
 
 [AuxKernels]
-  # inactive = 'test_aux'
   [domains]
     type = ProcessorIDAux
     variable = domains
   []
 
-  [cell_tally_val]
-    type = OpenMCTallyAux
-    tally_id = 1
-    execute_on = TIMESTEP_END
-    variable = power
-
-  []
-
-  # [test_aux]
-  #   type = ConstantAux
+  # [cell_tally_val]
+  #   type = OpenMCTallyAux
+  #   tally_id = 1
+  #   execute_on = TIMESTEP_END
   #   variable = power
-  #   value = 5
-  # []
-[]
-
-[Postprocessors]
-  # [diag_line_integral]
-  #   type = RayIntegralValue
-  #   ray_kernel = u_integral
-  #   # ray = diag
-  # []
-  # [right_up_line_integral]
-  #   type = RayIntegralValue
-  #   ray_kernel = u_integral
-  #   # ray = right_up
-  # []
-  # [avgval]
-  #   type = ElementAverageValue
-  #   variable = power
-  #   execute_on = FINAL
   # []
 []
