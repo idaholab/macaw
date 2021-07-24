@@ -45,10 +45,10 @@ OpenMCTallyAux::computeValue()
   auto& t = openmc::model::tallies[_tally_id -1 ];
   auto val = xt::view(t->results_,_current_elem->id(),0,1);
   //auto val = xt::sum(elem_scores)();
-  std::cout << _current_elem->id() << " " << val << std::endl;
-  // std::cout << "tally vector length: " << openmc::model::tallies.size() << std::endl;
+  _console << _current_elem->id() << " " << val << std::endl;
+  // _console << "tally vector length: " << openmc::model::tallies.size() << std::endl;
   // auto shape = t->results_.shape();
-  // std::cout << xt::adapt(shape) << std::endl;
+  // _console << xt::adapt(shape) << std::endl;
 
   return val; //5.0;
 }
