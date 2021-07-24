@@ -36,7 +36,8 @@ OpenMCTally::validParams()
   params.addParam<MooseEnum>("tally_estimator", estimator_types, "Estimator type used for the tally");
   params.addRequiredParam<std::vector<std::string>>("tally_scores","Scores to apply to the tally");
   params.addRequiredParam<std::vector<std::string>>("tally_filters","Filters to apply to the tally");
-  params.addRequiredParam<std::vector<int>>("filter_ids","Filter ids used to extract tally from an auxkernal");
+  params.addRequiredParam<std::vector<int>>("filter_ids",
+                                            "Filter ids used to extract tally from an auxkernal");
   params.addParam<std::vector<Real>>("tally_energy_bins","Define energy bins for the tally");
 
   return params;
@@ -44,13 +45,13 @@ OpenMCTally::validParams()
 
 OpenMCTally::OpenMCTally(const InputParameters & params)
   : GeneralUserObject(params),
-  _tally_id(getParam<int>("tally_id")),
-  _tally_particle(params.get<MooseEnum>("particle_type")),
-  _tally_estimator(params.get<MooseEnum>("tally_estimator")),
-  _tally_scores(getParam<std::vector<std::string>>("tally_scores")),
-  _tally_filters(getParam<std::vector<std::string>>("tally_filters")),
-  _filter_ids(getParam<std::vector<int>>("filter_ids")),
-  _tally_energy_bins(getParam<std::vector<Real>>("tally_energy_bins"))
+    _tally_id(getParam<int>("tally_id")),
+    _tally_particle(params.get<MooseEnum>("particle_type")),
+    _tally_estimator(params.get<MooseEnum>("tally_estimator")),
+    _tally_scores(getParam<std::vector<std::string>>("tally_scores")),
+    _tally_filters(getParam<std::vector<std::string>>("tally_filters")),
+    _filter_ids(getParam<std::vector<int>>("filter_ids")),
+    _tally_energy_bins(getParam<std::vector<Real>>("tally_energy_bins"))
 {
   if (_tally_particle != 0) {
     paramError("particle_type", "Only neutrons are currently supported.");
@@ -85,7 +86,7 @@ OpenMCTally::initialize()
     // create filter and add to filters vector
     // create takes in string argument
 
-    Filter* filter_ptr = Filter::create(_tally_filters.at(i), _filter_ids.at(i));
+    Filter * filter_ptr = Filter::create(_tally_filters.at(i), _filter_ids.at(i));
 
     if (filter_ptr->type() == "energy" ){
       _console << " Adding energy filter" << std::endl;
@@ -101,31 +102,32 @@ OpenMCTally::initialize()
       vector<ParticleType> types;
       types.push_back(ParticleType::neutron);
       particle_filter->set_particles(types);
-
-    } else if (filter_ptr->type() == "universe"){
+    }
+    else if (filter_ptr->type() == "universe")
+    {
       _console << " Adding universe filter" << std::endl;
 
-      UniverseFilter* universe_filter = dynamic_cast<UniverseFilter*>(filter_ptr);
+      UniverseFilter * universe_filter = dynamic_cast<UniverseFilter *>(filter_ptr);
 
       vector<int> universe_ids;
-      for(int i = 0; i < model::universes.size(); ++i)
+      for (int i = 0; i < model::universes.size(); ++i)
         universe_ids.push_back(i);
 
       universe_filter->set_universes(universe_ids);
-
-    } else if (filter_ptr->type() == "cell"){
+    }
+    else if (filter_ptr->type() == "cell")
+    {
       _console << " Adding cell filter" << std::endl;
 
-      CellFilter* cell_filter = dynamic_cast<CellFilter*>(filter_ptr);
+      CellFilter * cell_filter = dynamic_cast<CellFilter *>(filter_ptr);
 
       vector<int> cell_ids;
-      for(int i = 0; i < model::cells.size(); ++i)
+      for (int i = 0; i < model::cells.size(); ++i)
         cell_ids.push_back(i);
 
       cell_filter->set_cells(cell_ids);
-
-
-    } else
+    }
+    else
       mooseError("Unrecognized filter");
 
     filters.push_back(filter_ptr);

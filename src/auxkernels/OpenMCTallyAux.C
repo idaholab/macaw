@@ -25,15 +25,14 @@ OpenMCTallyAux::validParams()
   InputParameters params = AuxKernel::validParams();
 
   params.addRequiredParam<int>("tally_id", "Tally id used to access tally");
-  //params.addRequiredParam<int>("filter", "Filter id used to get tally value");
+  // params.addRequiredParam<int>("filter", "Filter id used to get tally value");
 
   return params;
 }
 
 OpenMCTallyAux::OpenMCTallyAux(const InputParameters & params)
-  : AuxKernel(params),
-  _tally_id(getParam<int>("tally_id"))
-  //_filter(getParam<int>("filter"))
+  : AuxKernel(params), _tally_id(getParam<int>("tally_id"))
+//_filter(getParam<int>("filter"))
 {
 }
 
@@ -42,13 +41,13 @@ OpenMCTallyAux::computeValue()
 {
   if (isNodal())
     mooseError("This AuxKernel only supports Elemental fields");
-  auto& t = openmc::model::tallies[_tally_id -1 ];
-  auto val = xt::view(t->results_,_current_elem->id(),0,1);
-  //auto val = xt::sum(elem_scores)();
+  auto & t = openmc::model::tallies[_tally_id - 1];
+  auto val = xt::view(t->results_, _current_elem->id(), 0, 1);
+  // auto val = xt::sum(elem_scores)();
   _console << _current_elem->id() << " " << val << std::endl;
   // _console << "tally vector length: " << openmc::model::tallies.size() << std::endl;
   // auto shape = t->results_.shape();
   // _console << xt::adapt(shape) << std::endl;
 
-  return val; //5.0;
+  return val; // 5.0;
 }

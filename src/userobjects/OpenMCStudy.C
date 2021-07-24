@@ -136,32 +136,37 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
     openmc::model::cell_map[i] = i;
   }
 
-  for (int i = 0; i < openmc::model::cells.size(); i++) {
+  for (int i = 0; i < openmc::model::cells.size(); i++)
+  {
     int32_t uid = openmc::model::cells[i]->universe_;
     auto it = openmc::model::universe_map.find(uid);
-    if (it == openmc::model::universe_map.end()) {
+    if (it == openmc::model::universe_map.end())
+    {
       openmc::model::universes.push_back(gsl::make_unique<openmc::Universe>());
       openmc::model::universes.back()->id_ = uid;
       openmc::model::universes.back()->cells_.push_back(i);
       openmc::model::universe_map[uid] = openmc::model::universes.size() - 1;
-    } else {
+    }
+    else
+    {
       openmc::model::universes[it->second]->cells_.push_back(i);
     }
   }
 
-/*
-  // resize the number of universes in openmc to the number of subdomains in moose
-  _console << "Number of Mesh Subdomains: " << _mesh.meshSubdomains().size() << std::endl;
-  openmc::model::universes.resize(_mesh.meshSubdomains().size());
-  _console << "Resizing number of OpenMC universes to: " << openmc::model::universes.size() << std::endl;
+  /*
+    // resize the number of universes in openmc to the number of subdomains in moose
+    _console << "Number of Mesh Subdomains: " << _mesh.meshSubdomains().size() << std::endl;
+    openmc::model::universes.resize(_mesh.meshSubdomains().size());
+    _console << "Resizing number of OpenMC universes to: " << openmc::model::universes.size() <<
+    std::endl;
 
 
 
-  for (int i = 0; i < openmc::model::universes.size(); ++i){
-    openmc::model::universes[i] = gsl::make_unique<openmc::Universe>();
-    openmc::model::universes[i]->id_ = i;
-  }
-  */
+    for (int i = 0; i < openmc::model::universes.size(); ++i){
+      openmc::model::universes[i] = gsl::make_unique<openmc::Universe>();
+      openmc::model::universes[i]->id_ = i;
+    }
+    */
   // does data OK
   // work TODO -> no need here
   // banks TODO -> no need for us
