@@ -24,14 +24,19 @@ OpenMCTallyAux::validParams()
 {
   InputParameters params = AuxKernel::validParams();
 
-  params.addRequiredParam<int>("tally_id", "Tally id used to access tally");
+  params.addParam<int>("tally_id", "Tally id used to access tally");
   // params.addRequiredParam<int>("filter", "Filter id used to get tally value");
+
+  // TODO: Add all filters and scores to retrieve in the right bin
+  // TODO: Add option to compute std deviation
 
   return params;
 }
 
 OpenMCTallyAux::OpenMCTallyAux(const InputParameters & params)
-  : AuxKernel(params), _tally_id(getParam<int>("tally_id"))
+  : AuxKernel(params),
+  _retrieve_from_tally_id(isParamValid("tally_id")),
+  _tally_id(isParamValid("tally_id") ? getParam<int>("tally_id") : -1)
 //_filter(getParam<int>("filter"))
 {
 }
@@ -39,15 +44,32 @@ OpenMCTallyAux::OpenMCTallyAux(const InputParameters & params)
 double
 OpenMCTallyAux::computeValue()
 {
-  if (isNodal())
-    mooseError("This AuxKernel only supports Elemental fields");
-  auto & t = openmc::model::tallies[_tally_id - 1];
-  auto val = xt::view(t->results_, _current_elem->id(), 0, 1);
-  // auto val = xt::sum(elem_scores)();
-  _console << _current_elem->id() << " " << val << std::endl;
-  // _console << "tally vector length: " << openmc::model::tallies.size() << std::endl;
-  // auto shape = t->results_.shape();
-  // _console << xt::adapt(shape) << std::endl;
+  if (_retrieve_from_tally_id)
+  {
+    // Retrieve tally based on the tally id
+    auto & t = openmc::model::tallies[_tally_id - 1];
+    //FIXME This is not correct. You need to retrieve the index into this array, which is not the id
 
-  return val; // 5.0;
+    // Compute filter index from specified filters and tally filters
+    const int filter_index = _current_elem->id();
+
+    // Compute score index from specified score
+    const int score_index = 0;
+
+    // Retrieve value
+    auto val = xt::view(t->results_, filter_index, score_index, 1);
+    _console << _current_elem->id() << " " << val << std::endl;
+
+
+    // _console << "tally vector length: " << openmc::model::tallies.size() << std::endl;
+    // auto shape = t->results_.shape();
+    // _console << xt::adapt(shape) << std::endl;
+
+    return val;
+  }
+  else
+  {
+    mooseError("Use tally ids, for now");
+    return 0;
+  }
 }

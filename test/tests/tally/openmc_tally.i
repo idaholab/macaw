@@ -122,10 +122,10 @@
     variable = domains
   []
 
-  # [cell_val]
-  #   type = OpenMCTallyAux
-  #   id = 1
-  #   execute_on = TIMESTEP_END
-  #   variable = power
-  # []
+  [cell_val]
+    type = OpenMCTallyAux
+    tally_id = 6
+    execute_on = TIMESTEP_END
+    variable = power
+  []
 []

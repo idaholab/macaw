@@ -123,8 +123,8 @@ OpenMCTally::initialize()
       _console << " Adding particle filter" << std::endl;
 
       ParticleFilter* particle_filter = dynamic_cast<ParticleFilter*>(filter_ptr);
-      vector<ParticleType> types(ParticleType::neutron);
-      types.push_back;
+
+      vector<ParticleType> types(_particle);
       particle_filter->set_particles(types);
     }
     else if (filter_ptr->type() == "universe")
@@ -192,6 +192,7 @@ OpenMCTally::initialize()
       mooseError("Unrecognized estimator");
   }
 
+  // TODO: Only do this for the new tallies
   // Allocate then initialize tally results arrays
   for (auto& t : model::tallies)
   {
