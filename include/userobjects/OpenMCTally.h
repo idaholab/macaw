@@ -17,10 +17,7 @@
 class InputParameters;
 
 /**
- * User object intermediate base class that declares an interface for providing generic fields
- * by name. Note: This object is intentionally inherited from GeneralUserObject (not elemental)
- * because several cases exist where we need to perform more complex operations possibly over
- * non-local elements
+ * Adds a tally to the OpenMC simulation.
  */
 class OpenMCTally : public GeneralUserObject
 {
@@ -29,38 +26,32 @@ public:
 
   OpenMCTally(const InputParameters & parameters);
 
-  void execute();
-
+  // Set up filters, bins and initialize tallies
   void initialize();
 
-  void finalize();
+  void execute() {};
 
-  void threadJoin();
+  void threadJoin() {};
+
+  void finalize() {};
 
 protected:
-  int _tally_id;
+  // TODO Add docstrings
+  int _id;
 
-  const MooseEnum _tally_particle;
+  const MooseEnum _particle;
 
-  const MooseEnum _tally_estimator;
+  const MooseEnum _estimator;
 
-  std::vector<std::string> _tally_scores;
+  std::vector<std::string> _scores;
 
-  std::vector<std::string> _tally_filters;
+  std::vector<std::string> _filters;
 
   std::vector<int> _filter_ids;
 
-  std::vector<Real> _tally_energy_bins;
+  std::vector<Real> _energy_bins;
 
-  //  virtual unsigned long getElementalValueLong(dof_id_type /*element_id*/,
-  //                                              const std::string & /*field_name*/) const
-  //  {
-  //    mooseError(name(), " does not satisfy the getElementalValueLong interface");
-  //  }
+  std::vector<int> _cell_bins;
 
-  //  virtual Real getElementalValueReal(dof_id_type /*element_id*/,
-  //                                     const std::string & /*field_name*/) const
-  //  {
-  //    mooseError(name(), " does not satisfy the getElementalValueReal interface");
-  //  }
+  std::vector<int> _block_bins;
 };

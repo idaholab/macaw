@@ -119,15 +119,20 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
     mooseError("Requested run mode is currently not supported by MaCaw");
 
   openmc_simulation_init();
+  // does data OK
+  // work TODO -> no need here
+  // banks TODO -> no need for us
+  // tally initialization TODO
+  // nuclide index mapping OK
 
+  // Single level tree to represent block containing cells
   openmc::model::n_coord_levels = 1;
-  // resize the number of cells in openmc to the number of elements in moose
-  _console << "Number of Mesh Elements: " << _mesh.nElem() << std::endl;
-  openmc::model::cells.resize(_mesh.nElem());
-  _console << "Resizing number of OpenMC cells to: " << openmc::model::cells.size() << std::endl;
 
+  // Resize the number of cells in openmc to the number of elements in moose
+  openmc::model::cells.resize(_mesh.nElem());
   openmc::model::cell_map.clear();
 
+  // Create cells for each element of the domain and assign their universe to the block
   for (int i = 0; i < openmc::model::cells.size(); ++i)
   {
     openmc::model::cells[i] = gsl::make_unique<openmc::CSGCell>();
@@ -136,6 +141,11 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
     openmc::model::cell_map[i] = i;
   }
 
+  // Resize the number of universes in openmc to the number of blocks in moose
+  openmc::model::universes.resize(_mesh.nElem());
+  openmc::model::universe_map.clear();
+
+  // Add all universes to the universe map, and keep track of the cells in each universe
   for (int i = 0; i < openmc::model::cells.size(); i++)
   {
     int32_t uid = openmc::model::cells[i]->universe_;
@@ -152,26 +162,6 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
       openmc::model::universes[it->second]->cells_.push_back(i);
     }
   }
-
-  /*
-    // resize the number of universes in openmc to the number of subdomains in moose
-    _console << "Number of Mesh Subdomains: " << _mesh.meshSubdomains().size() << std::endl;
-    openmc::model::universes.resize(_mesh.meshSubdomains().size());
-    _console << "Resizing number of OpenMC universes to: " << openmc::model::universes.size() <<
-    std::endl;
-
-
-
-    for (int i = 0; i < openmc::model::universes.size(); ++i){
-      openmc::model::universes[i] = gsl::make_unique<openmc::Universe>();
-      openmc::model::universes[i]->id_ = i;
-    }
-    */
-  // does data OK
-  // work TODO -> no need here
-  // banks TODO -> no need for us
-  // tally initialization TODO
-  // nuclide index mapping OK
 
   // TODO Initialize this nicer
   registerRayAuxData("energy");

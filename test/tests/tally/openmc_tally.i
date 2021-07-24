@@ -12,13 +12,13 @@
     ymax = 2.5
     zmax = 2.5
   []
-  [./add_subdomain]
+  [add_subdomain]
     input = gmg
     type = SubdomainBoundingBoxGenerator
     top_right = '0.5 0.5 2.5'
     bottom_left = '-0.5 -0.5 -2.5'
     block_id = 1
-  [../]
+  []
 []
 
 [Problem]
@@ -40,9 +40,11 @@
 [RayKernels/collision]
   type = CollisionKernel
   temperature = temperature
+  # mesh block ids
   blocks = "0 1 2"
-  materials = "1 4 3"  # openmc material id minus one !
-  verbose = true
+  # openmc material id
+  materials = "1 4 3"
+  # verbose = true
 []
 
 [RayBCs]
@@ -72,30 +74,30 @@
   [tally]
     type = OpenMCTally
     particle_type = 'neutron'
-    tally_estimator = 'COLLISION'
-    tally_scores = 'flux scatter (n,fission) 16'
-    tally_filters = 'energy particle'
-    tally_energy_bins = '1e-5 1e3 2e7'
+    estimator = 'COLLISION'
+    scores = 'flux scatter (n,fission) 16'
+    filters = 'energy particle'
+    energy_bins = '1e-5 1e3 2e7'
     execute_on = 'initial'
   []
 
   [univtally]
     type = OpenMCTally
     particle_type = 'neutron'
-    tally_estimator = 'COLLISION'
-    tally_scores = 'kappa-fission'
-    tally_filters = 'universe'
+    estimator = 'COLLISION'
+    scores = 'kappa-fission'
+    filters = 'universe'
     filter_ids = 1
     execute_on = 'initial'
   []
 
   [celltally]
     type = OpenMCTally
-    tally_id = 1
+    id = 1
     particle_type = 'neutron'
-    tally_estimator = 'COLLISION'
-    tally_scores = 'flux'
-    tally_filters = 'cell'
+    estimator = 'COLLISION'
+    scores = 'flux'
+    filters = 'cell'
     filter_ids = 1
     execute_on = 'initial'
   []
@@ -120,9 +122,9 @@
     variable = domains
   []
 
-  # [cell_tally_val]
+  # [cell_val]
   #   type = OpenMCTallyAux
-  #   tally_id = 1
+  #   id = 1
   #   execute_on = TIMESTEP_END
   #   variable = power
   # []
