@@ -12,6 +12,7 @@
 // openmc includes
 #include "openmc/capi.h"
 #include "openmc/constants.h"
+#include "openmc/material.h"
 #include "openmc/particle.h"
 #include "openmc/particle_data.h"
 #include "openmc/random_lcg.h"
@@ -63,22 +64,40 @@ CollisionKernel::CollisionKernel(const InputParameters & params)
 }
 
 void
+CollisionKernel::initialSetup()
+{
+  if (_verbose)
+    _console << "Kernel initial setup" << std::endl;
+
+  // Check that all materials do exist in OpenMC, otherwise it will crash at XS calculation
+  for (auto & m : _block_to_openmc_materials)
+  {
+    auto search = openmc::model::material_map.find(m.second);
+    if (search == openmc::model::material_map.end())
+      mooseError("Could not find material ", m.second, " in OpenMC materials.");
+  }
+}
+
+void
 CollisionKernel::onSegment()
 {
-  // TODO Add treatment for (n, 2n) reactions
-  //std::cout << "# of tallies: " << openmc::model::tallies.size() << std::endl;
   // Use a fake neutron to compute the cross sections
   auto p = &_particles[_tid];
 
   // resize to account for filters specified in moose
   p->filter_matches().resize(openmc::model::tally_filters.size());
   p->sqrtkT() = std::sqrt(openmc::K_BOLTZMANN * _T[0]);
-  p->material() = _block_to_openmc_materials.at(_current_elem->subdomain_id());
+  p->material() = _block_to_openmc_materials.at(_current_elem->subdomain_id()) - 1;
   p->coord(p->n_coord() - 1).universe = _current_subdomain_id;
-  p->coord(p->n_coord() - 1).cell = _current_elem->id(); // avoids a geometry search
+  p->coord(p->n_coord() - 1).cell = _current_elem->id();
   p->u() = {
       currentRay()->direction()(0), currentRay()->direction()(1), currentRay()->direction()(2)};
   p->E() = currentRay()->auxData(0);
+  p->wgt() = currentRay()->auxData(1);
+  p->n_progeny() = currentRay()->auxData(2);
+
+  // Set the particle id at the right location for setting n_progeny in event_death
+  p->id() = currentRay()->auxData(3);
 
   // Reset the OpenMC particle status
   p->alive() = true;
@@ -116,10 +135,10 @@ CollisionKernel::onSegment()
     p->event_collide();
 
     if (_verbose)
-      std::cout << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0)
-                << " -> " << p->E() << " block " << _current_elem->subdomain_id() << " material "
-                << p->material() << std::endl;
-    // std::cout << p->keff_tally_collision() << std::endl;
+      _console << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0)
+               << " -> " << p->E() << " block " << _current_elem->subdomain_id() << " material "
+               << p->material() << std::endl;
+
     // Update Ray direction
     Point new_direction(p->u()[0], p->u()[1], p->u()[2]);
     if (p->event() == openmc::TallyEvent::SCATTER)
@@ -127,38 +146,49 @@ CollisionKernel::onSegment()
 
     // Update Ray energy
     currentRay()->auxData(0) = p->E();
-    // TODO: Keep track of prevous energy? previous direction?
 
     // Keep track of weight (for implicit capture)
     currentRay()->auxData(1) = p->wgt();
 
+    // Keep track of particle number of progeny
+    currentRay()->auxData(2) = p->n_progeny();
+
     // Mark the ray as 'should not continue' if absorption was sampled
-    // and no secondary particles were created during the particle life
-    //TODO Double check for implicit absorption, what is openmc returning ?
+    // TODO Handle secondary particles
+    // Need to create a new ray as soon as the particles are sampled, as the kernel can only
+    // change direction and create rays in the same element
+    // TODO Need to track ray ids for progeny when adding new rays
     if (p->event() == openmc::TallyEvent::KILL || p->event() == openmc::TallyEvent::ABSORB)
     {
-      // If any, copy attributes from secondary particles to the ray
-      p->event_revive_from_secondary();
-      if (p->alive())
-      {
-        currentRay()->auxData(0) = p->E();
-        currentRay()->auxData(1) = p->wgt();
-
-        // Set starting information
-        Point start(p->r()[0], p->r()[1], p->r()[2]);
-        Point direction(p->u()[0], p->u()[1], p->u()[2]);
-        changeRayStartDirection(start, direction);
-
-        if (_verbose)
-          std::cout << "Running secondary : energy " << p->E() << " position " << start <<
-                       " block " << _current_elem->subdomain_id() << " material " << p->material()
-                       << std::endl;
-      }
-      else
-      {
         currentRay()->setShouldContinue(false);
         p->event_death();
-      }
     }
+
+    // Handle secondary particles immediately
+    // p->alive() = false;
+    // p->event_revive_from_secondary();
+    // if (p->n_event() == 0)
+    // {
+    //   if (_verbose)
+    //     _console << "Sampled secondary particle, creating new ray " << p->r() << " " << p->E()
+    //     << "eV " << p->u() << std::endl;
+    //
+    //   // Create a new Ray with starting information
+    //   Point start(p->r()[0], p->r()[1], p->r()[2]);
+    //   Point direction(p->u()[0], p->u()[1], p->u()[2]);
+    //   std::shared_ptr<Ray> ray = acquireRay(start, direction);
+    //
+    //   // Store neutron information
+    //   ray->auxData(0) = p->E();
+    //   ray->auxData(1) = p->wgt();
+    //
+    //   // Reset number of progeny particles
+    //   ray->auxData(2) = 0;
+    //
+    //   // Keep track of openmc particle id
+    //   ray->auxData(3) = p->id();
+    //
+    //   moveRayToBuffer(ray);
+    // }
   }
 }

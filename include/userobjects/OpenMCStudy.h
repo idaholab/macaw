@@ -33,7 +33,7 @@ protected:
 private:
   void meshChanged() override;
   void generateRays() override;
-  // void execute() override;
+  void execute() override;
   void postExecuteStudy() override;
 
   // TODO Delete if they only provide a timer
@@ -58,4 +58,7 @@ private:
   PerfID _claim_rays_timer;
   /// Timing for defining rays
   PerfID _define_rays_timer;
+
+  // Whether to output which stage of the simulation the solver is going through
+  bool _verbose;
 };

@@ -4,7 +4,7 @@
     dim = 3
     nx = 5
     ny = 5
-    nz = 1
+    nz = 5
     xmin = -5
     ymin = -5
     zmin = -5
@@ -30,6 +30,7 @@
 
 # Main things we care about for the coupling
 [Variables/temperature]
+  initial_condition = 300
 []
 
 [AuxVariables/power]
@@ -39,7 +40,7 @@
   type = CollisionKernel
   temperature = temperature
   blocks = "0 1 2"
-  materials = "0 1 2"  # openmc material id minus one !
+  materials = "1 1 1" # openmc material id
   # verbose = true
 []
 [RayKernels/u_integral]
@@ -76,6 +77,9 @@
 [Outputs]
   exodus = false
   csv = true
+
+  hide = 'num_rays'
+
   [rays]
     type = RayTracingExodus
     study = study
@@ -97,15 +101,54 @@
   []
 []
 
+# To measure performance
 [Postprocessors]
-  # [diag_line_integral]
-  #   type = RayIntegralValue
-  #   ray_kernel = u_integral
-  #   # ray = diag
-  # []
-  # [right_up_line_integral]
-  #   type = RayIntegralValue
-  #   ray_kernel = u_integral
-  #   # ray = right_up
-  # []
+  [total_mem]
+    type = MemoryUsage
+    execute_on = 'INITIAL TIMESTEP_END'
+  []
+  [per_proc]
+    type = MemoryUsage
+    value_type = "average"
+    execute_on = 'INITIAL TIMESTEP_END'
+  []
+  [max_proc]
+    type = MemoryUsage
+    value_type = "max_process"
+    execute_on = 'INITIAL TIMESTEP_END'
+  []
+  [total_time]
+    type = PerfGraphData
+    execute_on = 'INITIAL TIMESTEP_END'
+    data_type = 'TOTAL'
+    section_name = 'Root'
+  []
+  [run_time]
+    type = ChangeOverTimePostprocessor
+    postprocessor = total_time
+    execute_on = 'INITIAL TIMESTEP_END'
+  []
+
+  # Neutrons per second to compare to openmc
+  [num_rays]
+    type = VectorPostprocessorComponent
+    vectorpostprocessor = per_proc_ray_tracing
+    index = 0
+    vector_name = rays_traced
+  []
+  [total_num_rays]
+    type = CumulativeValuePostprocessor
+    postprocessor = num_rays
+  []
+  [neutrons_per_s]
+    type = ParsedPostprocessor
+    pp_names = 'total_num_rays total_time'
+    function = 'total_num_rays / total_time'
+  []
+[]
+
+[VectorPostprocessors/per_proc_ray_tracing]
+  type = PerProcessorRayTracingResultsVectorPostprocessor
+  execute_on = TIMESTEP_END
+  study = study
 []
