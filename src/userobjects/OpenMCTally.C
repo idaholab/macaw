@@ -63,6 +63,9 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
     paramError("execute_on", "execute_on must be INITIAL to ensure tallies are created "
      "once at the beginning of the simulation");
   }
+
+
+
 }
 
 void
@@ -168,9 +171,9 @@ OpenMCTally::initialize()
       // TODO This is being triggered so the input of the estimator must have an issue
   }
 
-  for (auto& t : model::tallies) {
-    t->init_results();
-  }
+
+  model::tallies.back()->init_results();
+
   openmc::setup_active_tallies();
 }
 

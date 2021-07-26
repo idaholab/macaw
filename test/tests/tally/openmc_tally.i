@@ -44,6 +44,7 @@
   blocks = "0 1 2"
   materials = "0 3 2"  # openmc material id minus one !
   verbose = true
+
 []
 [RayKernels/u_integral]
   type = VariableIntegralRayKernel
@@ -64,7 +65,7 @@
   [study]
     type = OpenMCStudy
 
-    execute_on = TIMESTEP_END
+    execute_on = TIMESTEP_BEGIN
 
     # Needed to cache trace information for RayTracingMeshOutput
     always_cache_traces = true
