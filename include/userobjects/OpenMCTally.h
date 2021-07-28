@@ -29,11 +29,11 @@ public:
   // Set up filters, bins and initialize tallies
   void initialize();
 
-  void execute() {};
+  void execute(){};
 
-  void threadJoin() {};
+  void threadJoin(){};
 
-  void finalize() {};
+  void finalize(){};
 
 protected:
   // TODO Add docstrings
@@ -46,8 +46,6 @@ protected:
   std::vector<std::string> _scores;
 
   std::vector<std::string> _filters;
-
-  std::vector<int> _filter_ids;
 
   std::vector<Real> _energy_bins;
 

@@ -17,6 +17,10 @@
 #include "openmc/tallies/filter_cell.h"
 #include "openmc/particle_data.h"
 
+#include <xtensor/xio.hpp>
+#include <xtensor/xtensor.hpp>
+#include <xtensor/xarray.hpp>
+
 #include <string>
 
 registerMooseObject("MaCawApp", OpenMCTally);
@@ -54,9 +58,8 @@ OpenMCTally::validParams()
   // TODO : Try not to use that, user should not input the id of a tally. What if it s the same
   // as an exisiting one?
   params.addRequiredParam<int>("id", "Tally id used to extract tally from an auxkernel");
-  // TODO : Do not use that. User should not input the ids of filters, too much work
-  params.addRequiredParam<std::vector<int>>("filter_ids",
-                                            "Filter ids used to extract tally from an auxkernel");
+
+
   return params;
 }
 
@@ -67,7 +70,6 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
     _estimator(getParam<MooseEnum>("estimator")),
     _scores(getParam<std::vector<std::string>>("scores")),
     _filters(getParam<std::vector<std::string>>("filters")),
-    _filter_ids(getParam<std::vector<int>>("filter_ids")),
     _energy_bins(isParamValid("energy_bins") ?
         getParam<std::vector<Real>>("energy_bins") : std::vector<Real>()),
     _cell_bins(isParamValid("cell_bins") ?
@@ -98,7 +100,7 @@ OpenMCTally::initialize()
 
   // Create a new tally (with specified id -> not a fan of this)
   _console << "Creating new tally" << std::endl;
-  model::tallies.push_back(make_unique<Tally>(C_NONE));
+  model::tallies.push_back(make_unique<Tally>(_id));
 
   // TODO: check for a mesh parameter and add mesh if exists
 
@@ -194,11 +196,12 @@ OpenMCTally::initialize()
 
   // TODO: Only do this for the new tallies
   // Allocate then initialize tally results arrays
-  for (auto& t : model::tallies)
-  {
-    t->init_results();
-    t->reset();
-  }
+
+  model::tallies.back()->init_results();
+  model::tallies.back()->results_.fill(0);
+  // model::tallies.back()->results_(0,0,0) = 1.1;
+  std::cout << model::tallies.back()->results_ << std::endl;
+  std::cout << model::tallies.size() << std::endl;
 
   // Add new user tallies to active tallies list
   openmc::setup_active_tallies();

@@ -11,7 +11,7 @@
 
 #include "AuxKernel.h"
 
-//TODO Add docstring
+// TODO Add docstring
 class OpenMCTallyAux : public AuxKernel
 {
 public:
@@ -23,10 +23,9 @@ protected:
   virtual Real computeValue() override;
 
   // TODO Add docstring
+  // Whether to use the tally id to retrieve the tally we want to plot
+  const bool _retrieve_from_tally_id;
   //  int _filter
 
   int _tally_id;
-
-  // Whether to use the tally id to retrieve the tally we want to plot
-  const bool _retrieve_from_tally_id;
 };

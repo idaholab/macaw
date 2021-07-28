@@ -24,6 +24,8 @@ OpenMCTallyAux::validParams()
 {
   InputParameters params = AuxKernel::validParams();
 
+  params.addClassDescription("Retrieves tally information from OpenMC");
+
   params.addParam<int>("tally_id", "Tally id used to access tally");
   // params.addRequiredParam<int>("filter", "Filter id used to get tally value");
 
@@ -47,10 +49,10 @@ OpenMCTallyAux::computeValue()
   if (_retrieve_from_tally_id)
   {
     // Retrieve tally based on the tally id
-    auto & t = openmc::model::tallies[_tally_id - 1];
-    //FIXME This is not correct. You need to retrieve the index into this array, which is not the id
+    auto & t = openmc::model::tallies[openmc::model::tally_map[_tally_id]];
 
     // Compute filter index from specified filters and tally filters
+
     const int filter_index = _current_elem->id();
 
     // Compute score index from specified score

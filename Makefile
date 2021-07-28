@@ -35,9 +35,9 @@ else
 endif
 
 # This needs to be exported
-OPENMC_BUILDDIR := $(CONTRIB_DIR)/openmc/build
-OPENMC_INSTALL_DIR := $(MACAW_DIR)/build/openmc
-OPENMC_INCLUDES := -I$(OPENMC_DIR)/include -I$(OPENMC_INSTALL_DIR)/include
+OPENMC_BUILDDIR := $(MACAW_DIR)/build/openmc
+OPENMC_INSTALL_DIR := $(CONTRIB_DIR)/openmc/build
+OPENMC_INCLUDES := -I$(OPENMC_DIR)/include -I$(OPENMC_INSTALL_DIR)/include -I$(OPENMC_DIR)/vendor/fmt/include -I$(OPENMC_DIR)/vendor/pugixml/src -I$(OPENMC_DIR)/vendor/xtensor/include -I$(OPENMC_DIR)/vendor/xtl/include -I$(OPENMC_DIR)/vendor/gsl-lite/include -I$(OPENMC_DIR)/include
 OPENMC_LIBDIR := $(OPENMC_INSTALL_DIR)/lib
 OPENMC_LIB := $(OPENMC_LIBDIR)/libopenmc.so
 
@@ -114,8 +114,8 @@ include            $(FRAMEWORK_DIR)/app.mk
 
 # app_objects are defined in moose.mk and built according to the rules in build.mk
 # We need to build these first so we get include dirs
-$(app_objects): build_openmc
-$(test_objects): build_openmc
+# $(app_objects): build_openmc
+# $(test_objects): build_openmc
 
 ###############################################################################
 # Additional special case targets should be added here
