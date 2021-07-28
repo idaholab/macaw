@@ -12,13 +12,13 @@
     ymax = 2.5
     zmax = 2.5
   []
-  [add_subdomain]
-    input = gmg
-    type = SubdomainBoundingBoxGenerator
-    top_right = '0.5 0.5 2.5'
-    bottom_left = '-0.5 -0.5 -2.5'
-    block_id = 1
-  []
+  # [add_subdomain]
+  #   input = gmg
+  #   type = SubdomainBoundingBoxGenerator
+  #   top_right = '0.5 0.5 2.5'
+  #   bottom_left = '-0.5 -0.5 -2.5'
+  #   block_id = 1
+  # []
 []
 
 [Problem]
@@ -41,9 +41,9 @@
   type = CollisionKernel
   temperature = temperature
   # mesh block ids
-  blocks = "0 1 2"
+  blocks = "0"
   # openmc material id
-  materials = "1 4 3"
+  materials = "1"
   # verbose = true
 []
 
@@ -55,7 +55,7 @@
 []
 
 [UserObjects]
-  inactive = 'tally univtally'
+  inactive = 'univtally'
 
   [study]
     type = OpenMCStudy
@@ -71,15 +71,7 @@
     aux_data_on_cache_traces = true
   []
 
-  [tally]
-    type = OpenMCTally
-    particle_type = 'neutron'
-    estimator = 'COLLISION'
-    scores = 'flux scatter (n,fission) 16'
-    filters = 'energy particle'
-    energy_bins = '1e-5 1e3 2e7'
-    execute_on = 'initial'
-  []
+
 
   [univtally]
     type = OpenMCTally
@@ -98,7 +90,6 @@
     estimator = 'COLLISION'
     scores = 'flux'
     filters = 'cell'
-    filter_ids = 1
     execute_on = 'initial'
   []
 []
@@ -124,7 +115,7 @@
 
   [cell_val]
     type = OpenMCTallyAux
-    tally_id = 6
+    tally_id = 1
     execute_on = TIMESTEP_END
     variable = power
   []

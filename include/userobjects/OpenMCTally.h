@@ -29,39 +29,25 @@ public:
   // Set up filters, bins and initialize tallies
   void initialize();
 
-  void execute() {};
+  void execute(){};
 
-  void threadJoin() {};
+  void threadJoin(){};
 
-  void finalize() {};
+  void finalize(){};
 
 protected:
-<<<<<<< HEAD
-  int _tally_id;
-
-  const MooseEnum _tally_particle;
-=======
   // TODO Add docstrings
   int _id;
 
   const MooseEnum _particle;
 
   const MooseEnum _estimator;
->>>>>>> 5036208f2f1cbe6e5a2a662cabb3c5dcf8c67b58
 
   std::vector<std::string> _scores;
 
   std::vector<std::string> _filters;
 
-  std::vector<int> _filter_ids;
-
-<<<<<<< HEAD
-  std::vector<int> _filter_ids;
-
-  std::vector<Real> _tally_energy_bins;
-=======
   std::vector<Real> _energy_bins;
->>>>>>> 5036208f2f1cbe6e5a2a662cabb3c5dcf8c67b58
 
   std::vector<int> _cell_bins;
 
