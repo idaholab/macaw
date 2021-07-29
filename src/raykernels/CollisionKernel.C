@@ -96,8 +96,17 @@ CollisionKernel::onSegment()
   p->wgt() = currentRay()->auxData(1);
   p->n_progeny() = currentRay()->auxData(2);
 
-  // Set the particle id at the right location for setting n_progeny in event_death
+  // Set the particle id at the right value for setting n_progeny in event_death
   p->id() = currentRay()->auxData(3);
+  
+  // To avoid an overflow in the n_progeny array for neutrons which would have
+  // changed domain, we adjust the value, however this prevents us from using the
+  // openmc sorting algorithm
+  if (p->id() - 1 - openmc::simulation::work_index[comm().rank()] >=
+      openmc::simulation::work_per_rank)
+    p->id() = 1 + openmc::simulation::work_index[comm().rank()];
+  else if (p->id() - 1 - openmc::simulation::work_index[comm().rank()] < 0)
+    p->id() = 1 + openmc::simulation::work_index[comm().rank()];
 
   // Reset the OpenMC particle status
   p->alive() = true;
