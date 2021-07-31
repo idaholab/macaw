@@ -40,10 +40,10 @@ OpenMCTally::validParams()
   params.addParam<MooseEnum>("particle_type", particle_types, "Particle type to track in tally");
   params.addRequiredParam<std::vector<std::string>>("filters", "Filters to apply to the tally");
   params.addParam<std::vector<Real>>("energy_bins", "Energy bins");
-  params.addParam<std::vector<Real>>("cell_bins",
-      "Mesh cell bins. Defaults to all cells if a CellFilter is present");
-  params.addParam<std::vector<Real>>("block_bins",
-      "Mesh block bins. Defaults to all blocks if a UniverseFilter is present");
+  params.addParam<std::vector<Real>>(
+      "cell_bins", "Mesh cell bins. Defaults to all cells if a CellFilter is present");
+  params.addParam<std::vector<Real>>(
+      "block_bins", "Mesh block bins. Defaults to all blocks if a UniverseFilter is present");
 
   // TODO Make particle filter accept more than one type (for example 2 bins: neutron and photon)
   // TODO Add nuclide filter & bins
@@ -68,12 +68,12 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
     _scores(getParam<std::vector<std::string>>("scores")),
     _filters(getParam<std::vector<std::string>>("filters")),
     _filter_ids(getParam<std::vector<int>>("filter_ids")),
-    _energy_bins(isParamValid("energy_bins") ?
-        getParam<std::vector<Real>>("energy_bins") : std::vector<Real>()),
-    _cell_bins(isParamValid("cell_bins") ?
-        getParam<std::vector<int>>("cell_bins") : std::vector<int>()),
-    _block_bins(isParamValid("block_bins") ?
-        getParam<std::vector<int>>("block_bins") : std::vector<int>())
+    _energy_bins(isParamValid("energy_bins") ? getParam<std::vector<Real>>("energy_bins")
+                                             : std::vector<Real>()),
+    _cell_bins(isParamValid("cell_bins") ? getParam<std::vector<int>>("cell_bins")
+                                         : std::vector<int>()),
+    _block_bins(isParamValid("block_bins") ? getParam<std::vector<int>>("block_bins")
+                                           : std::vector<int>())
 {
   // Parameter checks
   if (_particle != 0)
@@ -81,12 +81,13 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
   if (_estimator != 2)
     paramError("estimator", "Only collision estimator currently supported");
   if (!_execute_enum.contains(EXEC_INITIAL) || _execute_enum.size() > 1)
-    paramError("execute_on", "execute_on must be INITIAL to ensure tallies are created "
+    paramError("execute_on",
+               "execute_on must be INITIAL to ensure tallies are created "
                "once at the beginning of the simulation");
 
   // Check that bins are specified for the energy filter if required
   if (std::find(_filters.begin(), _filters.end(), "energy") != _filters.end() &&
-    !isParamValid("energy_bins"))
+      !isParamValid("energy_bins"))
     mooseError("The energy bins parameter should be supplied if an energy filter is "
                "requested.");
 }
@@ -102,7 +103,6 @@ OpenMCTally::initialize()
 
   // TODO: check for a mesh parameter and add mesh if exists
 
-
   // Create vector of tally and add each one from the _filters parameters
   vector<Filter*> filters;
   for (unsigned int i = 0; i < _filters.size(); ++i)
@@ -116,7 +116,6 @@ OpenMCTally::initialize()
 
       EnergyFilter* energy_filter = dynamic_cast<EnergyFilter*>(filter_ptr);
       energy_filter->set_bins(_energy_bins);
-
     }
     else if (filter_ptr->type() == "particle")
     {

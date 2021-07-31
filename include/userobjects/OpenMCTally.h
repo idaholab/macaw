@@ -29,11 +29,11 @@ public:
   // Set up filters, bins and initialize tallies
   void initialize();
 
-  void execute() {};
+  void execute(){};
 
-  void threadJoin() {};
+  void threadJoin(){};
 
-  void finalize() {};
+  void finalize(){};
 
 protected:
   // TODO Add docstrings

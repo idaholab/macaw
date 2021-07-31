@@ -219,7 +219,7 @@ CollisionKernel::onSegment()
       ray->auxData(2) = 0;
 
       // Need to generate a new particle id
-      //FIXME This is not deterministic
+      // FIXME This is not deterministic
       openmc::Particle p2;
       ray->auxData(3) = p2.id();
 

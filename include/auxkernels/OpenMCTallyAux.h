@@ -11,7 +11,7 @@
 
 #include "AuxKernel.h"
 
-//TODO Add docstring
+// TODO Add docstring
 class OpenMCTallyAux : public AuxKernel
 {
 public:

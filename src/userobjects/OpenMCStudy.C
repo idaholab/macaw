@@ -29,7 +29,7 @@
 #include "openmc/geometry.h"
 
 // For finalizing generations // TODO Make PR to OpenMC finalize_generation
-#include "openmc/tallies/tally.h"  // TODO Use C-API instead
+#include "openmc/tallies/tally.h" // TODO Use C-API instead
 #include "openmc/constants.h"
 #include "openmc/eigenvalue.h"
 #include "openmc/output.h"
@@ -43,7 +43,6 @@
 #include "openmc/finalize.h"
 #include "openmc/source.h"
 #include "openmc/bank.h"
-
 
 registerMooseObject("MaCawApp", OpenMCStudy);
 
@@ -434,25 +433,31 @@ OpenMCStudy::postExecuteStudy()
 void
 OpenMCStudy::finalizeGeneration()
 {
-  auto& gt = openmc::simulation::global_tallies;
+  auto & gt = openmc::simulation::global_tallies;
 
   // Update global tallies with the accumulation variables
-  if (openmc::settings::run_mode == openmc::RunMode::EIGENVALUE) {
-    gt(openmc::GlobalTally::K_COLLISION, openmc::TallyResult::VALUE) += openmc::global_tally_collision;
-    gt(openmc::GlobalTally::K_ABSORPTION, openmc::TallyResult::VALUE) += openmc::global_tally_absorption;
-    gt(openmc::GlobalTally::K_TRACKLENGTH, openmc::TallyResult::VALUE) += openmc::global_tally_tracklength;
+  if (openmc::settings::run_mode == openmc::RunMode::EIGENVALUE)
+  {
+    gt(openmc::GlobalTally::K_COLLISION, openmc::TallyResult::VALUE) +=
+        openmc::global_tally_collision;
+    gt(openmc::GlobalTally::K_ABSORPTION, openmc::TallyResult::VALUE) +=
+        openmc::global_tally_absorption;
+    gt(openmc::GlobalTally::K_TRACKLENGTH, openmc::TallyResult::VALUE) +=
+        openmc::global_tally_tracklength;
   }
   gt(openmc::GlobalTally::LEAKAGE, openmc::TallyResult::VALUE) += openmc::global_tally_leakage;
 
   // reset tallies
-  if (openmc::settings::run_mode == openmc::RunMode::EIGENVALUE) {
+  if (openmc::settings::run_mode == openmc::RunMode::EIGENVALUE)
+  {
     openmc::global_tally_collision = 0.0;
     openmc::global_tally_absorption = 0.0;
     openmc::global_tally_tracklength = 0.0;
   }
   openmc::global_tally_leakage = 0.0;
 
-  if (openmc::settings::run_mode == openmc::RunMode::EIGENVALUE) {
+  if (openmc::settings::run_mode == openmc::RunMode::EIGENVALUE)
+  {
 
     // TODO Sort bank
 
@@ -460,14 +465,16 @@ OpenMCStudy::finalizeGeneration()
     synchronizeBanks();
 
     // Calculate shannon entropy
-    if (openmc::settings::entropy_on) openmc::shannon_entropy();
+    if (openmc::settings::entropy_on)
+      openmc::shannon_entropy();
 
     // Collect results and statistics
     openmc::calculate_generation_keff();
     openmc::calculate_average_keff();
 
     // Write generation output
-    if (comm().rank() == 0 && openmc::settings::verbosity >= 7) {
+    if (comm().rank() == 0 && openmc::settings::verbosity >= 7)
+    {
       openmc::print_generation();
     }
   }
@@ -489,7 +496,8 @@ OpenMCStudy::synchronizeBanks()
   // While we would expect the value of start on rank 0 to be 0, the MPI
   // standard says that the receive buffer on rank 0 is undefined and not
   // significant
-  if (comm().rank() == 0) start = 0;
+  if (comm().rank() == 0)
+    start = 0;
 
   int64_t finish = start + openmc::simulation::fission_bank.size();
   int64_t total = finish;
@@ -504,9 +512,12 @@ OpenMCStudy::synchronizeBanks()
   // and the probability for selecting a site.
 
   int64_t sites_needed;
-  if (total < openmc::settings::n_particles) {
+  if (total < openmc::settings::n_particles)
+  {
     sites_needed = openmc::settings::n_particles % total;
-  } else {
+  }
+  else
+  {
     sites_needed = openmc::settings::n_particles;
   }
   double p_sample = static_cast<double>(sites_needed) / total;
@@ -515,7 +526,8 @@ OpenMCStudy::synchronizeBanks()
   {
     if (comm().rank() == 0)
       _console << "  Total fission source sites sampled: " << total << std::endl;
-    _console << "    Sampled on rank " << comm().rank() << " : " << n_bank << " -> finish " << finish << std::endl;
+    _console << "    Sampled on rank " << comm().rank() << " : " << n_bank << " -> finish "
+             << finish << std::endl;
   }
   if (total == 0)
     mooseError("No fission sites sampled on any process, cannot sample a new batch");
@@ -530,22 +542,26 @@ OpenMCStudy::synchronizeBanks()
   temp_sites.resize(openmc::simulation::fission_bank.size() *
                     std::max(1, int(openmc::settings::n_particles / total) + 1));
 
-  for (int64_t i = 0; i < openmc::simulation::fission_bank.size(); i++ ) {
-    const auto& site = openmc::simulation::fission_bank[i];
+  for (int64_t i = 0; i < openmc::simulation::fission_bank.size(); i++)
+  {
+    const auto & site = openmc::simulation::fission_bank[i];
 
     // If there are less than n_particles particles banked, automatically add
     // int(n_particles/total) sites to temp_sites. For example, if you need
     // 1000 and 300 were banked, this would add 3 source sites per banked site
     // and the remaining 100 would be randomly sampled.
-    if (total < openmc::settings::n_particles) {
-      for (int64_t j = 1; j <= openmc::settings::n_particles / total; ++j) {
+    if (total < openmc::settings::n_particles)
+    {
+      for (int64_t j = 1; j <= openmc::settings::n_particles / total; ++j)
+      {
         temp_sites[index_temp] = site;
         ++index_temp;
       }
     }
 
     // Randomly sample sites needed
-    if (openmc::prn(&seed) < p_sample) {
+    if (openmc::prn(&seed) < p_sample)
+    {
       temp_sites[index_temp] = site;
       ++index_temp;
     }
@@ -569,15 +585,18 @@ OpenMCStudy::synchronizeBanks()
   int local_finish = finish * (openmc::simulation::fission_bank.size() > 0);
   MPI_Allreduce(&local_finish, &last_finish, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 
-  if (local_finish == last_finish) {
-    if (finish > openmc::settings::n_particles) {
+  if (local_finish == last_finish)
+  {
+    if (finish > openmc::settings::n_particles)
+    {
       // If we have extra sites sampled, we will simply discard the extra
       // ones on the last processor
       index_temp = openmc::settings::n_particles - start;
       if (_verbose)
         _console << "Cutting too long fission source on last active rank" << std::endl;
-
-    } else if (finish < openmc::settings::n_particles) {
+    }
+    else if (finish < openmc::settings::n_particles)
+    {
       if (_verbose)
         _console << "Expanding too short fission source on last active rank : "
                  << openmc::settings::n_particles - finish << std::endl;
@@ -586,7 +605,8 @@ OpenMCStudy::synchronizeBanks()
       // fission bank
       sites_needed = openmc::settings::n_particles - finish;
       temp_sites.resize(temp_sites.size() + sites_needed);
-      for (int i = 0; i < sites_needed; ++i) {
+      for (int i = 0; i < sites_needed; ++i)
+      {
         // For low numbers of neutrons, this could go below 0
         int i_bank = std::max(0, int(openmc::simulation::fission_bank.size() - sites_needed + i));
         temp_sites[index_temp] = openmc::simulation::fission_bank[i_bank];
@@ -594,15 +614,16 @@ OpenMCStudy::synchronizeBanks()
       }
     }
   }
-  _console << "Size of temporary bank on rank " << comm().rank() << " : " << index_temp << std::endl;
+  _console << "Size of temporary bank on rank " << comm().rank() << " : " << index_temp
+           << std::endl;
 
   // Check size of bank before moving sites
   if (openmc::simulation::source_bank.size() < index_temp)
     openmc::simulation::source_bank.resize(index_temp);
 
   // Move fission sites from temporary array to source bank array
-  std::copy(temp_sites.begin(), temp_sites.begin() + index_temp,
-    openmc::simulation::source_bank.begin());
+  std::copy(
+      temp_sites.begin(), temp_sites.begin() + index_temp, openmc::simulation::source_bank.begin());
 
   // Keep track of source bank size
   _source_bank_size = index_temp;

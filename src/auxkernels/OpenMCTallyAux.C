@@ -35,8 +35,8 @@ OpenMCTallyAux::validParams()
 
 OpenMCTallyAux::OpenMCTallyAux(const InputParameters & params)
   : AuxKernel(params),
-  _retrieve_from_tally_id(isParamValid("tally_id")),
-  _tally_id(isParamValid("tally_id") ? getParam<int>("tally_id") : -1)
+    _retrieve_from_tally_id(isParamValid("tally_id")),
+    _tally_id(isParamValid("tally_id") ? getParam<int>("tally_id") : -1)
 //_filter(getParam<int>("filter"))
 {
 }
@@ -48,7 +48,8 @@ OpenMCTallyAux::computeValue()
   {
     // Retrieve tally based on the tally id
     auto & t = openmc::model::tallies[_tally_id - 1];
-    //FIXME This is not correct. You need to retrieve the index into this array, which is not the id
+    // FIXME This is not correct. You need to retrieve the index into this array, which is not the
+    // id
 
     // Compute filter index from specified filters and tally filters
     const int filter_index = _current_elem->id();
