@@ -1,10 +1,24 @@
 folder = '/home/guillaume/projects/mockingbird/problems/beavrs/generator_geom'
 
 [Mesh]
-  # active = 'fuel_16 fuel_24 fuel_31 bp gt it water_assembly outer_water'
+  # Keep it quarter core and 2D
+  # inactive = 'core extrude'
+  # 2D full core
+  # inactive = 'quarter_core center delete_left delete_top extrude'
+  # 3D quarter core
   inactive = 'core'
-  # inactive = 'small_core delete_left delete_top'
-  # active = 'fuel_31 fuel_16 bp gt it sleeve 16enr_no_instr_pins 16enr_no_instr'
+  # 3D full core
+  # inactive = 'quarter_core center delete_left delete_top'
+
+  [extrude]
+    type = FancyExtruderGenerator
+    input = delete_top
+    heights = '20 15 1.748 0.4141 3.3579 57.505 5.715 46.482 5.715 46.482 5.715 46.482 5.715 46.482 5.715 46.482 5.715 37.783 9.298 3.358 2 2.54 3.345 8.827 28.124'
+    num_layers = '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+    direction = '0 0 1'
+    bottom_sideset = '8'
+    top_sideset = '9'
+  []
 
   [fuel_31]
     type = FileMeshGenerator
@@ -812,7 +826,7 @@ water_baffle_corner_se water_baffle_corner_ne'
     left_boundary = 4
   []
 
-  [small_core]
+  [quarter_core]
     type = PatternedMeshGenerator
     #               0           1        2         3        4          5           6
     inputs = '16enr_no_instr 24enr_16 24enr_12 31enr_6w 31enr_20 31enr_no_instr 31enr_16
@@ -851,7 +865,7 @@ water_baffle_corner_se water_baffle_corner_ne'
   [center]
     # Center the mesh around 0,0
     type = TransformGenerator
-    input = small_core
+    input = quarter_core
     transform = TRANSLATE
     vector_value = '0 0 0' #'-182.10784 182.10784 0'
   []
