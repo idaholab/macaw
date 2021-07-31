@@ -98,7 +98,7 @@ CollisionKernel::onSegment()
 
   // Set the particle id at the right value for setting n_progeny in event_death
   p->id() = currentRay()->auxData(3);
-  
+
   // To avoid an overflow in the n_progeny array for neutrons which would have
   // changed domain, we adjust the value, however this prevents us from using the
   // openmc sorting algorithm
@@ -108,9 +108,15 @@ CollisionKernel::onSegment()
   else if (p->id() - 1 - openmc::simulation::work_index[comm().rank()] < 0)
     p->id() = 1 + openmc::simulation::work_index[comm().rank()];
 
+  // Set the particle seed for consistent random number generation
+  p->seeds(0) = currentRay()->auxData(4);
+  p->seeds(1) = currentRay()->auxData(5);
+  p->seeds(2) = currentRay()->auxData(6);
+
   // Reset the OpenMC particle status
   p->alive() = true;
 
+  // Compute all cross sections
   p->event_calculate_xs();
 
   // Compute distance to next collision
@@ -123,6 +129,11 @@ CollisionKernel::onSegment()
   // Contribute to the tracklength keff estimator
   p->keff_tally_tracklength() += p->wgt() *
       std::min(collision_distance, _current_segment_length) * p->macro_xs().nu_fission;
+
+  // Keep track of the particle seed for consistent random number generation
+  currentRay()->auxData(4) = p->seeds(0);
+  currentRay()->auxData(5) = p->seeds(1);
+  currentRay()->auxData(6) = p->seeds(2);
 
   // Shorter than next intersection, ray tracing will take care of moving the
   // particle
@@ -140,13 +151,16 @@ CollisionKernel::onSegment()
         currentRay()->currentPoint() -
         (_current_segment_length - collision_distance) * currentRay()->direction();
 
+    // Set the particle position to the collision location for banking sites
+    p->r() = {current_position(0), current_position(1), current_position(2)};
+
     // Compute collision
     p->event_collide();
 
     if (_verbose)
       _console << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0)
                << " -> " << p->E() << " block " << _current_elem->subdomain_id() << " material "
-               << p->material() << std::endl;
+               << p->material() << " progeny " << p->n_progeny() << std::endl;
 
     // Update Ray direction
     Point new_direction(p->u()[0], p->u()[1], p->u()[2]);
@@ -162,6 +176,11 @@ CollisionKernel::onSegment()
     // Keep track of particle number of progeny
     currentRay()->auxData(2) = p->n_progeny();
 
+    // Keep track of the particle seed for consistent random number generation
+    currentRay()->auxData(4) = p->seeds(0);
+    currentRay()->auxData(5) = p->seeds(1);
+    currentRay()->auxData(6) = p->seeds(2);
+
     // Mark the ray as 'should not continue' if absorption was sampled
     // TODO Handle secondary particles
     // Need to create a new ray as soon as the particles are sampled, as the kernel can only
@@ -173,31 +192,32 @@ CollisionKernel::onSegment()
         p->event_death();
     }
 
-    // Handle secondary particles immediately
-    // p->alive() = false;
-    // p->event_revive_from_secondary();
-    // if (p->n_event() == 0)
-    // {
-    //   if (_verbose)
-    //     _console << "Sampled secondary particle, creating new ray " << p->r() << " " << p->E()
-    //     << "eV " << p->u() << std::endl;
-    //
-    //   // Create a new Ray with starting information
-    //   Point start(p->r()[0], p->r()[1], p->r()[2]);
-    //   Point direction(p->u()[0], p->u()[1], p->u()[2]);
-    //   std::shared_ptr<Ray> ray = acquireRay(start, direction);
-    //
-    //   // Store neutron information
-    //   ray->auxData(0) = p->E();
-    //   ray->auxData(1) = p->wgt();
-    //
-    //   // Reset number of progeny particles
-    //   ray->auxData(2) = 0;
-    //
-    //   // Keep track of openmc particle id
-    //   ray->auxData(3) = p->id();
-    //
-    //   moveRayToBuffer(ray);
-    // }
+    // Handle secondary particles immediately after they are sampled, as the particle
+    // could change domain, and rays cannot be created in a different domain
+    p->alive() = false;
+    p->event_revive_from_secondary();
+    if (p->n_event() == 0)
+    {
+      if (_verbose)
+        _console << "Sampled secondary particle, creating new ray " << p->r() << " " << p->E()
+        << "eV " << p->u() << std::endl;
+
+      // Create a new Ray with starting information
+      Point start(p->r()[0], p->r()[1], p->r()[2]);
+      Point direction(p->u()[0], p->u()[1], p->u()[2]);
+      std::shared_ptr<Ray> ray = acquireRay(start, direction);
+
+      // Store neutron information
+      ray->auxData(0) = p->E();
+      ray->auxData(1) = p->wgt();
+
+      // Reset number of progeny particles
+      ray->auxData(2) = 0;
+
+      // Keep track of openmc particle id
+      ray->auxData(3) = p->id();
+
+      moveRayToBuffer(ray);
+    }
   }
 }

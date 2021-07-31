@@ -58,8 +58,6 @@ OpenMCTallyAux::computeValue()
 
     // Retrieve value
     auto val = xt::view(t->results_, filter_index, score_index, 1);
-    _console << _current_elem->id() << " " << val << std::endl;
-
 
     // _console << "tally vector length: " << openmc::model::tallies.size() << std::endl;
     // auto shape = t->results_.shape();

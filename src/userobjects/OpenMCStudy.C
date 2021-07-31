@@ -61,7 +61,7 @@ OpenMCStudy::validParams()
   // We don't typically have internal sidesets in Monte Carlo
   // params.set<bool>("use_internal_sidesets") = false;
   // params.suppressParameter<bool>("use_internal_sidesets");
-  // Neutrons dont need to be named
+  // particles dont need to be named
   params.addPrivateParam<bool>("_use_ray_registration", false);
   // We manage banking Rays as needed on our own
   params.set<bool>("_bank_rays_on_completion") = false;
@@ -84,11 +84,11 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
   /*
   This class doesnt really need to get anything that can be in OpenMC input files:
   - materials
-  - settings (number of neutrons, batches, etc)
+  - settings (number of particles, batches, etc)
   - even tallies (for now, we'll just replicated)!
 
   Its real objective should be to call each part of openmc_run, and replace just the core stuff with
-  'Ray' instead of neutrons. Maybe we could even make a subclass of 'Particle, neutron', that also
+  'Ray' instead of particles. Maybe we could even make a subclass of 'Particle, particle', that also
   inherits from 'Ray' so that both OpenMC and MOOSE know what to do with it
 
   There are a few transfers we want to make:
@@ -101,13 +101,13 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
   - more than 1 batch ? If it's annoying
 
   How to handle OpenMC physics calls
-  // save the OpenMC neutron in AuxData
+  // save the OpenMC particle in AuxData
   // OR
   // make a class that inherits from both
   // OR
-  // use fake neutrons to call the routines and move results over
+  // use fake particles to call the routines and move results over
   // OR
-  // use fake neutrons created once and use references to move results over
+  // use fake particles created once and use references to move results over
   */
 
   if (_verbose)
@@ -178,6 +178,10 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
   registerRayAuxData("weight");
   registerRayAuxData("n_progeny");
   registerRayAuxData("id");
+  registerRayAuxData("seed_tracking");
+  registerRayAuxData("seed_source");
+  registerRayAuxData("seed_URR");
+
 
   // Set the number of steps of the Transient executioner as the number of batches
   if (dynamic_cast<Transient *>(_app.getExecutioner()))
@@ -261,7 +265,7 @@ OpenMCStudy::generateRays()
   // Create all the rays, place them in _rays
   defineRaysInternal();
 
-  // Assign rays to each process. This is done every time since neutrons keep
+  // Assign rays to each process. This is done every time since particles keep
   // changing domains. If we do fixed source, we can limit this
   claimRaysInternal();
 
@@ -345,7 +349,7 @@ OpenMCStudy::defineRays()
   //TODO separate batches and generations
   openmc::simulation::current_batch = _t_step;
   openmc::simulation::current_gen = 1;
-  openmc::Particle neutron;
+  openmc::Particle p;
 
   // Loop over particles. create the rays
   // This needs to be done over all processes, since we do not know where the particle will
@@ -360,7 +364,7 @@ OpenMCStudy::defineRays()
     // _console << ray->getInfo() << std::endl;
 
     // Have OpenMC initialize all the information
-    openmc::initialize_history(neutron, i + 1);
+    openmc::initialize_history(p, i + 1);
 
     /* includes :
       position, direction, energy, weight, children
@@ -368,19 +372,24 @@ OpenMCStudy::defineRays()
       various indexes, tally derivatives etc
     */
 
-    // Store neutron information
-    ray->auxData(0) = neutron.E();
-    ray->auxData(1) = neutron.wgt();
+    // Store p information
+    ray->auxData(0) = p.E();
+    ray->auxData(1) = p.wgt();
 
     // Reset number of progeny particles
     ray->auxData(2) = 0;
 
     // Keep track of openmc particle id
-    ray->auxData(3) = neutron.id();
+    ray->auxData(3) = p.id();
+
+    // Keep track of the particle seed for consistent random number generation
+    ray->auxData(4) = p.seeds(0);
+    ray->auxData(5) = p.seeds(1);
+    ray->auxData(6) = p.seeds(2);
 
     // Set starting information
-    Point start(neutron.r()[0], neutron.r()[1], neutron.r()[2]);
-    Point direction(neutron.u()[0], neutron.u()[1], neutron.u()[2]);
+    Point start(p.r()[0], p.r()[1], p.r()[2]);
+    Point direction(p.u()[0], p.u()[1], p.u()[2]);
 
     // Claimer will locate the starting point
     ray->setStart(start);

@@ -39,13 +39,8 @@
   type = CollisionKernel
   temperature = temperature
   blocks = "0 1 2"
-  materials = "0 1 2"  # openmc material id minus one !
+  materials = "1 2 3"  # openmc material id minus one !
   # verbose = true
-[]
-[RayKernels/u_integral]
-  type = VariableIntegralRayKernel
-  variable = temperature
-  # rays = 'diag right_up'
 []
 
 [RayBCs]

@@ -194,11 +194,9 @@ OpenMCTally::initialize()
 
   // TODO: Only do this for the new tallies
   // Allocate then initialize tally results arrays
-  for (auto& t : model::tallies)
-  {
-    t->init_results();
-    t->reset();
-  }
+
+  model::tallies.back()->init_results();
+  model::tallies.back()->results_.fill(0);
 
   // Add new user tallies to active tallies list
   openmc::setup_active_tallies();
