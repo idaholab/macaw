@@ -181,7 +181,7 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
   registerRayAuxData("seed_tracking");
   registerRayAuxData("seed_source");
   registerRayAuxData("seed_URR");
-
+  registerRayAuxData("particle_type");
 
   // Set the number of steps of the Transient executioner as the number of batches
   if (dynamic_cast<Transient *>(_app.getExecutioner()))
@@ -387,6 +387,9 @@ OpenMCStudy::defineRays()
     ray->auxData(5) = p.seeds(1);
     ray->auxData(6) = p.seeds(2);
 
+    // Keep track of particle type
+    ray->auxData(7) = int(p.type());
+
     // Set starting information
     Point start(p.r()[0], p.r()[1], p.r()[2]);
     Point direction(p.u()[0], p.u()[1], p.u()[2]);
@@ -523,9 +526,9 @@ OpenMCStudy::synchronizeBanks()
   // Allocate temporary source bank -- we don't really know how many fission
   // sites were created, so overallocate
   int64_t index_temp = 0;
-  std::vector<openmc::SourceSite> temp_sites(
-      openmc::simulation::fission_bank.size() *
-      std::max(1, int(openmc::settings::n_particles / total)) + 1);
+  std::vector<openmc::SourceSite> temp_sites;
+  temp_sites.resize(openmc::simulation::fission_bank.size() *
+                    std::max(1, int(openmc::settings::n_particles / total) + 1));
 
   for (int64_t i = 0; i < openmc::simulation::fission_bank.size(); i++ ) {
     const auto& site = openmc::simulation::fission_bank[i];
@@ -576,21 +579,21 @@ OpenMCStudy::synchronizeBanks()
 
     } else if (finish < openmc::settings::n_particles) {
       if (_verbose)
-        _console << "Expanding too short fission source on last active rank" << std::endl;
+        _console << "Expanding too short fission source on last active rank : "
+                 << openmc::settings::n_particles - finish << std::endl;
 
       // If we have too few sites, repeat sites from the very end of the
       // fission bank
       sites_needed = openmc::settings::n_particles - finish;
       temp_sites.resize(temp_sites.size() + sites_needed);
       for (int i = 0; i < sites_needed; ++i) {
-        // For low numbers of neutrons, this could go below 0?
-        int i_bank = std::min(0, int(openmc::simulation::fission_bank.size() - sites_needed + i));
+        // For low numbers of neutrons, this could go below 0
+        int i_bank = std::max(0, int(openmc::simulation::fission_bank.size() - sites_needed + i));
         temp_sites[index_temp] = openmc::simulation::fission_bank[i_bank];
         ++index_temp;
       }
     }
   }
-
   _console << "Size of temporary bank on rank " << comm().rank() << " : " << index_temp << std::endl;
 
   // Check size of bank before moving sites
@@ -598,7 +601,7 @@ OpenMCStudy::synchronizeBanks()
     openmc::simulation::source_bank.resize(index_temp);
 
   // Move fission sites from temporary array to source bank array
-  std::copy(temp_sites.data(), temp_sites.data() + index_temp,
+  std::copy(temp_sites.begin(), temp_sites.begin() + index_temp,
     openmc::simulation::source_bank.begin());
 
   // Keep track of source bank size
