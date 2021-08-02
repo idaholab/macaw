@@ -69,6 +69,10 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
     _estimator(getParam<MooseEnum>("estimator")),
     _scores(getParam<std::vector<std::string>>("scores")),
     _filters(getParam<std::vector<std::string>>("filters")),
+<<<<<<< HEAD
+=======
+    _filter_ids(getParam<std::vector<int>>("filter_ids")),
+>>>>>>> origin/PR_MPI
     _energy_bins(isParamValid("energy_bins") ? getParam<std::vector<Real>>("energy_bins")
                                              : std::vector<Real>()),
     _cell_bins(isParamValid("cell_bins") ? getParam<std::vector<int>>("cell_bins")

@@ -42,6 +42,12 @@ private:
 
   void defineRays();
 
+  /// Routine to collect tallies, and void fission bank sourcing and synchronizing
+  void finalizeGeneration();
+
+  /// Routine to synchronize banks across all processors
+  void synchronizeBanks();
+
   /// Routine to warn about potential incompatibility issues
   void checkOpenMCVersion();
 
@@ -58,6 +64,9 @@ private:
   PerfID _claim_rays_timer;
   /// Timing for defining rays
   PerfID _define_rays_timer;
+
+  // The size of the particle source bank on this process
+  unsigned int _source_bank_size;
 
   // Whether to output which stage of the simulation the solver is going through
   bool _verbose;
