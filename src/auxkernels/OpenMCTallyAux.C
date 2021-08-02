@@ -37,8 +37,8 @@ OpenMCTallyAux::validParams()
 
 OpenMCTallyAux::OpenMCTallyAux(const InputParameters & params)
   : AuxKernel(params),
-  _retrieve_from_tally_id(isParamValid("tally_id")),
-  _tally_id(isParamValid("tally_id") ? getParam<int>("tally_id") : -1)
+    _retrieve_from_tally_id(isParamValid("tally_id")),
+    _tally_id(isParamValid("tally_id") ? getParam<int>("tally_id") : -1)
 //_filter(getParam<int>("filter"))
 {
 }
@@ -61,7 +61,6 @@ OpenMCTallyAux::computeValue()
     // Retrieve value
     auto val = xt::view(t->results_, filter_index, score_index, 1);
     _console << _current_elem->id() << " " << val << std::endl;
-
 
     // _console << "tally vector length: " << openmc::model::tallies.size() << std::endl;
     // auto shape = t->results_.shape();
