@@ -53,6 +53,8 @@ CollisionKernel::CollisionKernel(const InputParameters & params)
   // Build map from subdomains to OpenMC materials
   const auto blocks = getParam<std::vector<unsigned int>>("blocks");
   const auto materials = getParam<std::vector<unsigned int>>("materials");
+  if (blocks.size() != materials.size())
+    paramError("blocks", "The blocks parameter must be the same size as the materials parameter.");
   for (unsigned int i = 0; i < blocks.size(); i++)
     _block_to_openmc_materials.insert(std::make_pair<int, int>(blocks[i], materials[i]));
 
