@@ -108,9 +108,7 @@ OpenMCTallyAux::computeValue()
 
         score_index = score_bin*score_stride + nuc_bin;
 
-        std::cout << score_index << std::endl;
 
-        mooseError("temp");
 
         int univ_bins = 1;
         int univ_stride = 1;

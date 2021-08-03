@@ -88,9 +88,10 @@
     id = 1
     particle_type = 'neutron'
     estimator = 'COLLISION'
-    scores = 'flux'
+    scores = 'fission scatter'
     filters = 'cell energy'
     energy_bins = '1e-5 1 1e7'
+    nuclides = 'U235 O16 U238'
     execute_on = 'initial'
   []
 []
@@ -122,6 +123,7 @@
     particle_type = neutron
     execute_on = TIMESTEP_END
     variable = power
-    energy_bin = 0
+    nuclide = 'U238'
+    score = 'scatter'
   []
 []
