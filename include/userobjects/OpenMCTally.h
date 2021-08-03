@@ -53,3 +53,22 @@ protected:
 
   std::vector<int> _block_bins;
 };
+
+bool
+cmp(std::string x, std::string y)
+{
+  if (x == "universe")
+    return true;
+  if (y == "universe")
+    return false;
+  if (x == "cell")
+    return true;
+  if (y == "cell")
+    return false;
+  if (x == "energy")
+    return true;
+  if (y == "energy")
+    return false;
+  else
+    return false;
+}
