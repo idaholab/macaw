@@ -25,7 +25,28 @@ protected:
   // TODO Add docstring
   // Whether to use the tally id to retrieve the tally we want to plot
   const bool _retrieve_from_tally_id;
-  //  int _filter
 
+  // id of the tally to retrieve wanted tally value from
   int _tally_id;
+
+  // Scope of the tally values to retrieve
+  const MooseEnum _granularity;
+
+  // particle used for tally
+  const MooseEnum _particle;
+
+  // estimator used in tally
+  const MooseEnum _estimator;
+
+  // Whether to sum over all nuclides
+  const bool _all_nuclides;
+
+  // Nuclide to retrieve tally value from
+  std::string _nuclide;
+
+  // Whether to sum over all energies
+  const bool _all_energies;
+
+  // Energy bin to retrieve tally value from
+  int _energy_bin;
 };
