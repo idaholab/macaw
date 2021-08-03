@@ -10,6 +10,8 @@
 #include "OpenMCTallyAux.h"
 
 #include "openmc/tallies/tally.h"
+#include "openmc/nuclide.h"
+#include "openmc/reaction.h"
 
 #include <xtensor/xarray.hpp>
 #include <xtensor/xfixed.hpp>
@@ -32,6 +34,7 @@ OpenMCTallyAux::validParams()
 
   params.addParam<int>("tally_id", "Tally id used to access tally");
   params.addRequiredParam<MooseEnum>("granularity", granularity_types, "Scope of the tally value to retrieve");
+  params.addRequiredParam<std::string>("score", "Score or reaction to retrieve wanted tally value from");
   params.addRequiredParam<MooseEnum>("estimator", estimator_types, "Estimator type of the tally");
   params.addRequiredParam<MooseEnum>("particle_type", particle_types, "Particle type of the tally");
   params.addParam<std::string>("nuclide", "Nuclide to get tally value for");
@@ -49,6 +52,7 @@ OpenMCTallyAux::OpenMCTallyAux(const InputParameters & params)
     _retrieve_from_tally_id(isParamValid("tally_id")),
     _tally_id(isParamValid("tally_id") ? getParam<int>("tally_id") : -1),
     _granularity(getParam<MooseEnum>("granularity")),
+    _score(getParam<std::string>("score")),
     _particle(getParam<MooseEnum>("particle_type")),
     _estimator(getParam<MooseEnum>("estimator")),
     _all_nuclides(!isParamValid("nuclide")),
@@ -68,6 +72,7 @@ OpenMCTallyAux::computeValue()
   double val;
   int filter_index;
   int score_index;
+  int nuc_bin;
 
   if (_retrieve_from_tally_id)
   {
@@ -86,9 +91,27 @@ OpenMCTallyAux::computeValue()
         break;
       case 2:
 
-        if (t->nuclides_[0] == -1) int score_index = 0;
-        else
-          mooseError("Individual nuclide tallying is not available yet");
+        // TODO: add the case where all nuclides need to be summed
+        // TODO: add case where only on energy bin is wanted
+        if (t->nuclides_[0] != -1)
+        {
+          auto nuc_i = openmc::data::nuclide_map[_nuclide];
+          auto it = find(t->nuclides_.begin(),t->nuclides_.end(), nuc_i);
+          nuc_bin = it - t->nuclides_.begin();
+        }
+        else nuc_bin = 0;
+
+        int mt = openmc::reaction_type(_score);
+        auto it = find(t->scores_.begin(), t->scores_.end(), mt);
+        int score_bin = it - t->scores_.begin();
+        int score_stride = t->nuclides_.size();
+
+        score_index = score_bin*score_stride + nuc_bin;
+
+        std::cout << score_index << std::endl;
+
+        mooseError("temp");
+
         int univ_bins = 1;
         int univ_stride = 1;
         int energy_bins = 1;

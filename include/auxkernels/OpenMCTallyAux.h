@@ -32,6 +32,9 @@ protected:
   // Scope of the tally values to retrieve
   const MooseEnum _granularity;
 
+  // Score or reaction to retrieve wanted tally value from
+  std::string _score;
+
   // particle used for tally
   const MooseEnum _particle;
 
