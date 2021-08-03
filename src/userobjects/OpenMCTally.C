@@ -44,6 +44,7 @@ OpenMCTally::validParams()
   // Filters and bins
   params.addParam<MooseEnum>("particle_type", particle_types, "Particle type to track in tally");
   params.addRequiredParam<std::vector<std::string>>("filters", "Filters to apply to the tally");
+  params.addParam<std::vector<std::string>>("nuclides", "Nuclides to apply to the tally");
   params.addParam<std::vector<Real>>("energy_bins", "Energy bins");
   params.addParam<std::vector<Real>>(
       "cell_bins", "Mesh cell bins. Defaults to all cells if a CellFilter is present");
@@ -70,6 +71,9 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
     _estimator(getParam<MooseEnum>("estimator")),
     _scores(getParam<std::vector<std::string>>("scores")),
     _filters(getParam<std::vector<std::string>>("filters")),
+
+    _nuclides(isParamValid("nuclides") ? getParam<std::vector<std::string>>("nuclides")
+                                              : std::vector<std::string> {"total"}),
 
     _energy_bins(isParamValid("energy_bins") ? getParam<std::vector<Real>>("energy_bins")
                                              : std::vector<Real>()),
@@ -175,10 +179,8 @@ OpenMCTally::initialize()
   // Add scores
   model::tallies.back()->set_scores(_scores);
 
-  // Add nuclides //TODO
-  vector<std::string> nuc;
-  nuc.push_back("total");
-  model::tallies.back()->set_nuclides(nuc);
+  // Add nuclides
+  model::tallies.back()->set_nuclides(_nuclides);
 
   // Set the tally estimator
   // get rid of switch with enum to string method?

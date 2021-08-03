@@ -47,6 +47,8 @@ protected:
 
   std::vector<std::string> _filters;
 
+  std::vector<std::string> _nuclides;
+
   std::vector<Real> _energy_bins;
 
   std::vector<int> _cell_bins;
