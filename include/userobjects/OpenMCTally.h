@@ -66,8 +66,10 @@ protected:
   std::vector<int> _block_bins;
 };
 
-/* Comparison funtion for a custom sort of the specified Filters
-so that tally values can be systmatically retieved easily in OpenMCTallyAux */
+/**
+ * Comparison funtion for a custom sort of the specified Filters
+ *so that tally values can be systmatically retieved easily in OpenMCTallyAux
+ */
 bool
 cmp(std::string x, std::string y)
 {

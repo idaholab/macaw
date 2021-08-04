@@ -69,7 +69,7 @@ OpenMCTallyAux::OpenMCTallyAux(const InputParameters & params)
 double
 OpenMCTallyAux::computeValue()
 {
-  double val;
+  double val = 0;
   int filter_index;
   int score_index;
   int nuc_bin;
@@ -92,7 +92,9 @@ OpenMCTallyAux::computeValue()
       case 2:
 
         // TODO: add the case where all nuclides need to be summed
-        // TODO: add case where only one energy bin is wanted
+        // TODO: add case where not all cells are in cell filters
+        // can't index by element->id() anymore
+
 
         // check if individual nuclides are scored in tally and find the index
         if (t->nuclides_[0] != -1)
