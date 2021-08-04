@@ -92,7 +92,9 @@ OpenMCTallyAux::computeValue()
       case 2:
 
         // TODO: add the case where all nuclides need to be summed
-        // TODO: add case where only on energy bin is wanted
+        // TODO: add case where only one energy bin is wanted
+
+        // check if individual nuclides are scored in tally and find the index
         if (t->nuclides_[0] != -1)
         {
           auto nuc_i = openmc::data::nuclide_map[_nuclide];
@@ -101,6 +103,7 @@ OpenMCTallyAux::computeValue()
         }
         else nuc_bin = 0;
 
+        // find the score bin and stride length to get score index
         int mt = openmc::reaction_type(_score);
         auto it = find(t->scores_.begin(), t->scores_.end(), mt);
         int score_bin = it - t->scores_.begin();
@@ -108,25 +111,35 @@ OpenMCTallyAux::computeValue()
 
         score_index = score_bin*score_stride + nuc_bin;
 
-
-
-        int univ_bins = 1;
+        // initialize indices for tally summing
+        int univ_start = 0;
+        int univ_end = 1;
         int univ_stride = 1;
-        int energy_bins = 1;
+        int energy_start = 0;
+        int energy_end = 1;
         int energy_stride =1;
         int cell_bin = _current_elem->id();
         int cell_stride = 1;
 
+        // find the indices and strides needed to sum tally results
         for (auto i = 0; i < t->filters().size(); ++i)
         {
           auto i_filt = t->filters(i);
           if (openmc::model::tally_filters[i_filt]->type() == "universe"){
-            univ_bins = openmc::model::tally_filters[i_filt]->n_bins();
+            univ_end = openmc::model::tally_filters[i_filt]->n_bins();
             univ_stride = t->strides(i);
           }
           else if (openmc::model::tally_filters[i_filt]->type() == "energy")
           {
-            energy_bins = openmc::model::tally_filters[i_filt]->n_bins();
+            if (_all_energies)
+            {
+              energy_end = openmc::model::tally_filters[i_filt]->n_bins();
+            }
+            else
+            {
+              energy_start = _energy_bin;
+              energy_end = energy_start + 1;
+            }
             energy_stride = t->strides(i);
           }
           else if (openmc::model::tally_filters[i_filt]->type() == "cell"){
@@ -135,9 +148,9 @@ OpenMCTallyAux::computeValue()
         }
 
 
-        for (int i = 0; i < univ_bins; ++i)
+        for (int i = univ_start; i < univ_end; ++i)
         {
-          for (int j = 0; j < energy_bins; ++j)
+          for (int j = energy_start; j < energy_end; ++j)
           {
             filter_index = i*univ_stride + cell_bin*cell_stride + j*energy_stride;
             val += xt::view(t->results_, filter_index, score_index, 1);
