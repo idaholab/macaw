@@ -73,7 +73,7 @@ OpenMCTally::OpenMCTally(const InputParameters & params)
     _filters(getParam<std::vector<std::string>>("filters")),
 
     _nuclides(isParamValid("nuclides") ? getParam<std::vector<std::string>>("nuclides")
-                                              : std::vector<std::string> {"total"}),
+                                       : std::vector<std::string>{"total"}),
 
     _energy_bins(isParamValid("energy_bins") ? getParam<std::vector<Real>>("energy_bins")
                                              : std::vector<Real>()),
@@ -114,7 +114,6 @@ OpenMCTally::initialize()
   vector<Filter*> filters;
   // Sort the filters into a specific order
   std::sort(_filters.begin(), _filters.end(), cmp);
-
 
   for (unsigned int i = 0; i < _filters.size(); ++i)
   {

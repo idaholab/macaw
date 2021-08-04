@@ -33,8 +33,10 @@ OpenMCTallyAux::validParams()
   MooseEnum particle_types("neutron photon electron positron", "neutron");
 
   params.addParam<int>("tally_id", "Tally id used to access tally");
-  params.addRequiredParam<MooseEnum>("granularity", granularity_types, "Scope of the tally value to retrieve");
-  params.addRequiredParam<std::string>("score", "Score or reaction to retrieve wanted tally value from");
+  params.addRequiredParam<MooseEnum>(
+      "granularity", granularity_types, "Scope of the tally value to retrieve");
+  params.addRequiredParam<std::string>("score",
+                                       "Score or reaction to retrieve wanted tally value from");
   params.addRequiredParam<MooseEnum>("estimator", estimator_types, "Estimator type of the tally");
   params.addRequiredParam<MooseEnum>("particle_type", particle_types, "Particle type of the tally");
   params.addParam<std::string>("nuclide", "Nuclide to get tally value for");
@@ -82,7 +84,7 @@ OpenMCTallyAux::computeValue()
     switch (_granularity)
     {
       case 0:
-      // insert global
+        // insert global
         mooseError("Global Tally retrieving currently not supported");
         break;
       case 1:
@@ -95,15 +97,15 @@ OpenMCTallyAux::computeValue()
         // TODO: add case where not all cells are in cell filters
         // can't index by element->id() anymore
 
-
         // check if individual nuclides are scored in tally and find the index
         if (t->nuclides_[0] != -1)
         {
           auto nuc_i = openmc::data::nuclide_map[_nuclide];
-          auto it = find(t->nuclides_.begin(),t->nuclides_.end(), nuc_i);
+          auto it = find(t->nuclides_.begin(), t->nuclides_.end(), nuc_i);
           nuc_bin = it - t->nuclides_.begin();
         }
-        else nuc_bin = 0;
+        else
+          nuc_bin = 0;
 
         // find the score bin and stride length to get score index
         int mt = openmc::reaction_type(_score);
@@ -111,7 +113,7 @@ OpenMCTallyAux::computeValue()
         int score_bin = it - t->scores_.begin();
         int score_stride = t->nuclides_.size();
 
-        score_index = score_bin*score_stride + nuc_bin;
+        score_index = score_bin * score_stride + nuc_bin;
 
         // initialize indices for tally summing
         int univ_start = 0;
@@ -119,7 +121,7 @@ OpenMCTallyAux::computeValue()
         int univ_stride = 1;
         int energy_start = 0;
         int energy_end = 1;
-        int energy_stride =1;
+        int energy_stride = 1;
         int cell_bin = _current_elem->id();
         int cell_stride = 1;
 
@@ -127,7 +129,8 @@ OpenMCTallyAux::computeValue()
         for (auto i = 0; i < t->filters().size(); ++i)
         {
           auto i_filt = t->filters(i);
-          if (openmc::model::tally_filters[i_filt]->type() == "universe"){
+          if (openmc::model::tally_filters[i_filt]->type() == "universe")
+          {
             univ_end = openmc::model::tally_filters[i_filt]->n_bins();
             univ_stride = t->strides(i);
           }
@@ -144,24 +147,23 @@ OpenMCTallyAux::computeValue()
             }
             energy_stride = t->strides(i);
           }
-          else if (openmc::model::tally_filters[i_filt]->type() == "cell"){
+          else if (openmc::model::tally_filters[i_filt]->type() == "cell")
+          {
             cell_stride = t->strides(i);
           }
         }
-
 
         for (int i = univ_start; i < univ_end; ++i)
         {
           for (int j = energy_start; j < energy_end; ++j)
           {
-            filter_index = i*univ_stride + cell_bin*cell_stride + j*energy_stride;
+            filter_index = i * univ_stride + cell_bin * cell_stride + j * energy_stride;
             val += xt::view(t->results_, filter_index, score_index, 1);
           }
         }
 
         break;
     }
-
 
     return val;
   }
