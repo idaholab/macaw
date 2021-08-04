@@ -37,25 +37,37 @@ public:
 
 protected:
   // TODO Add docstrings
+
+  // Id to reference in TallyAux
   int _id;
 
+  // Particle type to tally values for
   const MooseEnum _particle;
 
+  // Estimator type for tally
   const MooseEnum _estimator;
 
+  // Scores and reactions to tally
   std::vector<std::string> _scores;
 
+  // Filters to use for the tally
   std::vector<std::string> _filters;
 
+  // Nuclides to tally reactions on
   std::vector<std::string> _nuclides;
 
+  // Energy bin edges for energy filter
   std::vector<Real> _energy_bins;
 
+  // Cells to use in cell filter
   std::vector<int> _cell_bins;
 
+  // Blocks to use in universe filter
   std::vector<int> _block_bins;
 };
 
+/* Comparison funtion for a custom sort of the specified Filters
+so that tally values can be systmatically retieved easily in OpenMCTallyAux */
 bool
 cmp(std::string x, std::string y)
 {

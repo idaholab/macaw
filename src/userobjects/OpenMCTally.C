@@ -112,8 +112,9 @@ OpenMCTally::initialize()
 
   // Create vector of tally and add each one from the _filters parameters
   vector<Filter*> filters;
+  // Sort the filters into a specific order
   std::sort(_filters.begin(), _filters.end(), cmp);
-  //std::cout << _filters << std::endl;
+
 
   for (unsigned int i = 0; i < _filters.size(); ++i)
   {

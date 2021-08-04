@@ -11,7 +11,10 @@
 
 #include "AuxKernel.h"
 
-// TODO Add docstring
+/**
+ * Retrieves tally values from OpenMC simulation and tranfers the values
+ * to a MOOSE auxvariable
+ */
 class OpenMCTallyAux : public AuxKernel
 {
 public:
