@@ -85,6 +85,11 @@ CollisionKernel::initialSetup()
     if (search == openmc::model::material_map.end())
       mooseError("Could not find material ", m.second, " in OpenMC materials.");
   }
+
+  // Check that all blocks exist, as a sanity check only
+  for (auto & b : _block_to_openmc_materials)
+    if (!hasBlocks(b.first))
+      mooseWarning("Could not find specified block ", b.first, " for the collision kernel.");
 }
 
 void
