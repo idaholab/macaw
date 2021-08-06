@@ -35,6 +35,7 @@ CollisionKernel::validParams()
                                                      "Blocks on which this kernel is defined.");
   params.addRequiredParam<std::vector<unsigned int>>("materials",
                                                      "OpenMC material ids for each block.");
+  params.addParam<Real>("z_coord", 0, "The axial coordinate for 2D calculations");
   params.addParam<bool>("verbose", false, "Whether to print collision information");
 
   return params;
@@ -43,12 +44,18 @@ CollisionKernel::validParams()
 CollisionKernel::CollisionKernel(const InputParameters & params)
   : IntegralRayKernelBase(params),
     _T(coupledValue("temperature")),
+    _is_2D(_mesh.dimension() == 2),
+    _z_coord(getParam<Real>("z_coord")),
     _verbose(getParam<bool>("verbose"))
 {
   // Check that the temperature variable is a constant monomial
   // TODO check properly
   if (getFieldVar("temperature", 0)->order() != 1)
     paramError("temperature", "Only CONST MONOMIAL temperatures are currently supported.");
+
+  // Check for 2D parameters
+  if (_is_2D && !params.isParamSetByUser("z_coord"))
+    mooseError("The z_coord parameter must be specified for 2D calculations");
 
   // Build map from subdomains to OpenMC materials
   const auto blocks = getParam<std::vector<unsigned int>>("blocks");
@@ -156,6 +163,10 @@ CollisionKernel::onSegment()
         currentRay()->currentPoint() -
         (_current_segment_length - collision_distance) * currentRay()->direction();
 
+    // Adapt for two dimensions
+    if (_is_2D)
+      current_position(2) = _z_coord;
+
     // Set the particle position to the collision location for banking sites
     p->r() = {current_position(0), current_position(1), current_position(2)};
 
@@ -168,8 +179,13 @@ CollisionKernel::onSegment()
                << p->material() << " progeny " << p->n_progeny() << " ids " << p->id() << " / "
                << currentRay()->id() << std::endl;
 
-    // Update Ray direction
+    // Scattering direction is stored on neutron
     Point new_direction(p->u()[0], p->u()[1], p->u()[2]);
+
+    // Adapt for two dimensions
+    if (_is_2D)
+      new_direction(2) = 0;
+
     if (p->event() == openmc::TallyEvent::SCATTER)
       changeRayStartDirection(current_position, new_direction);
 
@@ -207,6 +223,11 @@ CollisionKernel::onSegment()
       // Create a new Ray with starting information
       Point start(p->r()[0], p->r()[1], p->r()[2]);
       Point direction(p->u()[0], p->u()[1], p->u()[2]);
+      if (_is_2D)
+      {
+        start(2) = _z_coord;
+        direction(2) = 0;
+      }
       std::shared_ptr<Ray> ray = acquireRay(start, direction);
 
       if (_verbose)
