@@ -10,6 +10,7 @@
 #include "OpenMCTallyAux.h"
 
 #include "openmc/tallies/tally.h"
+#include "openmc/tallies/filter_cell.h"
 #include "openmc/nuclide.h"
 #include "openmc/reaction.h"
 
@@ -18,6 +19,7 @@
 #include <xtensor/xio.hpp>
 #include <xtensor/xtensor.hpp>
 #include <xtensor/xview.hpp>
+#include <xtensor/xadapt.hpp>
 
 registerMooseObject("MaCawApp", OpenMCTallyAux);
 
@@ -75,11 +77,77 @@ OpenMCTallyAux::computeValue()
   int filter_index;
   int score_index;
   int nuc_bin;
+  int univ_start = 0;
+  int univ_end = 1;
+  int univ_stride = 1;
+  int energy_start = 0;
+  int energy_end = 1;
+  int energy_stride = 1;
+  int cell_stride = 1;
+  int cell_bin;
+  bool has_cell_filter = false;
+  bool has_univ_filter = false;
 
   if (_retrieve_from_tally_id)
   {
     // Retrieve tally based on the tally id
     auto & t = openmc::model::tallies[openmc::model::tally_map[_tally_id]];
+
+    // check if individual nuclides are scored in tally and find the index
+    if (t->nuclides_[0] != -1)
+    {
+      auto nuc_i = openmc::data::nuclide_map[_nuclide];
+      auto it = find(t->nuclides_.begin(), t->nuclides_.end(), nuc_i);
+      nuc_bin = it - t->nuclides_.begin();
+    }
+    else
+      nuc_bin = 0;
+
+    // find the score bin and stride length to get score index
+    int mt = openmc::reaction_type(_score);
+    auto it = find(t->scores_.begin(), t->scores_.end(), mt);
+    if (it == t->scores_.end()) paramError("score","The specified score does not exist in"
+                                            "given tally");
+    int score_bin = it - t->scores_.begin();
+    int score_stride = t->nuclides_.size();
+
+    score_index = score_bin * score_stride + nuc_bin;
+
+    for (auto i = 0; i < t->filters().size(); ++i)
+    {
+      auto i_filt = t->filters(i);
+      if (openmc::model::tally_filters[i_filt]->type() == "universe")
+      {
+        univ_end = openmc::model::tally_filters[i_filt]->n_bins();
+        univ_stride = t->strides(i);
+        has_univ_filter = true;
+      }
+      else if (openmc::model::tally_filters[i_filt]->type() == "energy")
+      {
+        if (_all_energies)
+        {
+          energy_end = openmc::model::tally_filters[i_filt]->n_bins();
+        }
+        else
+        {
+          energy_start = _energy_bin;
+          energy_end = energy_start + 1;
+        }
+        energy_stride = t->strides(i);
+      }
+      else if (openmc::model::tally_filters[i_filt]->type() == "cell")
+      {
+        const openmc::CellFilter * cell_filter
+          {dynamic_cast<openmc::CellFilter *>(openmc::model::tally_filters[i_filt].get())};
+
+        if (find(cell_filter->cells().begin(), cell_filter->cells().end(),
+            _current_elem->id()) == cell_filter->cells().end()) return 0;
+
+        cell_bin = cell_filter->map_.at(_current_elem->id());
+        cell_stride = t->strides(i);
+        has_cell_filter = true;
+      }
+    }
 
     switch (_granularity)
     {
@@ -88,8 +156,24 @@ OpenMCTallyAux::computeValue()
         mooseError("Global Tally retrieving currently not supported");
         break;
       case 1:
+
+        if (!has_univ_filter) mooseError("Tally does not have a universe filter");
+
+        if (has_cell_filter) mooseError("Universe granularity does not currently support tallies"
+                                "with both universe and cell filters");
+
+        for (int j = energy_start; j < energy_end; ++j)
+        {
+          filter_index = _current_elem->subdomain_id() * univ_stride + j * energy_stride;
+          std::cout << filter_index << std::endl;
+          //std::cout << xt::adapt(t->results_.shape()) << std::endl;
+
+          val += xt::view(t->results_, filter_index, score_index, 1);
+
+        }
+        std::cout << "val: " << val << std::endl;
         // insert universe
-        mooseError("Universe Tally retrieving currently not supported");
+        // mooseError("Universe Tally retrieving currently not supported");
         break;
       case 2:
 
@@ -97,61 +181,9 @@ OpenMCTallyAux::computeValue()
         // TODO: add case where not all cells are in cell filters
         // can't index by element->id() anymore
 
-        // check if individual nuclides are scored in tally and find the index
-        if (t->nuclides_[0] != -1)
-        {
-          auto nuc_i = openmc::data::nuclide_map[_nuclide];
-          auto it = find(t->nuclides_.begin(), t->nuclides_.end(), nuc_i);
-          nuc_bin = it - t->nuclides_.begin();
-        }
-        else
-          nuc_bin = 0;
 
-        // find the score bin and stride length to get score index
-        int mt = openmc::reaction_type(_score);
-        auto it = find(t->scores_.begin(), t->scores_.end(), mt);
-        int score_bin = it - t->scores_.begin();
-        int score_stride = t->nuclides_.size();
+        if (!has_cell_filter) mooseError("Specified tally does not contain a cell filter");
 
-        score_index = score_bin * score_stride + nuc_bin;
-
-        // initialize indices for tally summing
-        int univ_start = 0;
-        int univ_end = 1;
-        int univ_stride = 1;
-        int energy_start = 0;
-        int energy_end = 1;
-        int energy_stride = 1;
-        int cell_bin = _current_elem->id();
-        int cell_stride = 1;
-
-        // find the indices and strides needed to sum tally results
-        for (auto i = 0; i < t->filters().size(); ++i)
-        {
-          auto i_filt = t->filters(i);
-          if (openmc::model::tally_filters[i_filt]->type() == "universe")
-          {
-            univ_end = openmc::model::tally_filters[i_filt]->n_bins();
-            univ_stride = t->strides(i);
-          }
-          else if (openmc::model::tally_filters[i_filt]->type() == "energy")
-          {
-            if (_all_energies)
-            {
-              energy_end = openmc::model::tally_filters[i_filt]->n_bins();
-            }
-            else
-            {
-              energy_start = _energy_bin;
-              energy_end = energy_start + 1;
-            }
-            energy_stride = t->strides(i);
-          }
-          else if (openmc::model::tally_filters[i_filt]->type() == "cell")
-          {
-            cell_stride = t->strides(i);
-          }
-        }
 
         for (int i = univ_start; i < univ_end; ++i)
         {
