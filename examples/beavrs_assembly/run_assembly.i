@@ -86,11 +86,7 @@
 [RayBCs]
   [reflect]
     type = ReflectRayBC
-    boundary = '3 4' #'back front top right left bottom'
-  []
-  [vacuum]
-    type = KillRayBC
-    boundary = '1 2' #'bottom top right front'
+    boundary = '1 2 3 4' #'back front top right left bottom'
   []
 []
 
@@ -163,10 +159,10 @@
     variable = domains
   []
 
-  [cell_val]
-    type = OpenMCTallyAux
-    tally_id = 6
-    execute_on = TIMESTEP_END
-    variable = power
-  []
+  # [cell_val]
+  #   type = OpenMCTallyAux
+  #   tally_id = 6
+  #   execute_on = TIMESTEP_END
+  #   variable = power
+  # []
 []

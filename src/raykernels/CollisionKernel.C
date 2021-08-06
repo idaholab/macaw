@@ -98,9 +98,12 @@ CollisionKernel::onSegment()
   // Use a fake neutron to compute the cross sections
   auto p = &_particles[_tid];
 
-  // resize to account for filters specified in moose
+  // Resize to account for filters specified in moose (only needed once)
+  // TODO Move to inital setup once can show that all tallies have already been added
   p->filter_matches().resize(openmc::model::tally_filters.size());
-  p->sqrtkT() = std::sqrt(openmc::K_BOLTZMANN * _T[0]);
+
+  // Set particle attributes
+  p->sqrtkT() = std::sqrt(openmc::K_BOLTZMANN * _T[_qp]);
   p->material() = _block_to_openmc_materials.at(_current_elem->subdomain_id()) - 1;
   p->coord(p->n_coord() - 1).universe = _current_subdomain_id;
   p->coord(p->n_coord() - 1).cell = _current_elem->id();
@@ -115,7 +118,7 @@ CollisionKernel::onSegment()
 
   // To avoid an overflow in the n_progeny array for neutrons which would have
   // changed domain, we adjust the value, however this prevents us from using the
-  // openmc sorting algorithm
+  // openmc sorting algorithm when using domain decomposition
   if (p->id() - 1 - openmc::simulation::work_index[comm().rank()] >=
       openmc::simulation::work_per_rank)
     p->id() = 1 + openmc::simulation::work_index[comm().rank()];
@@ -177,6 +180,10 @@ CollisionKernel::onSegment()
 
     // Compute collision
     p->event_collide();
+
+    mooseAssert(!std::isnan(p->u()[0]) && !std::isnan(p->u()[1]) && !std::isnan(p->u()[2]) &&
+                    !std::isnan(p->E() && p->E() >= 0),
+                "Invalid particle energy and direction after collision.");
 
     if (_verbose)
       _console << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0)

@@ -36,7 +36,6 @@ private:
   void execute() override;
   void postExecuteStudy() override;
 
-  // TODO Delete if they only provide a timer
   void claimRaysInternal();
   void defineRaysInternal();
 
@@ -69,5 +68,5 @@ private:
   unsigned int _source_bank_size;
 
   // Whether to output which stage of the simulation the solver is going through
-  bool _verbose;
+  const bool _verbose;
 };
