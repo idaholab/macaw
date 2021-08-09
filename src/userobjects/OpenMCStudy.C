@@ -137,39 +137,41 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
   // Single level tree to represent block containing cells
   openmc::model::n_coord_levels = 1;
 
+  // TODO Figure out how to distribute that
+  // TODO Use active elements, for adaptivity
+
   // Resize the number of cells in openmc to the number of elements in moose
-  openmc::model::cells.resize(_mesh.nElem());
+  openmc::model::cells.resize(_mesh.getMesh().n_active_local_elem());
   openmc::model::cell_map.clear();
 
-  // Create cells for each element of the domain and assign their universe to the block
-  for (int i = 0; i < openmc::model::cells.size(); ++i)
-  {
-    openmc::model::cells[i] = gsl::make_unique<openmc::CSGCell>();
-    openmc::model::cells[i]->id_ = i;
-    openmc::model::cells[i]->universe_ = _mesh.elemPtr(i)->subdomain_id();
-    openmc::model::cell_map[i] = i;
-  }
-
   // Resize the number of universes in openmc to the number of blocks in moose
-  openmc::model::universes.resize(_mesh.nElem());
+  openmc::model::universes.resize(_mesh.getMesh().n_subdomains());
   openmc::model::universe_map.clear();
 
-  // Add all universes to the universe map, and keep track of the cells in each universe
-  for (int i = 0; i < openmc::model::cells.size(); i++)
+  int i = -1;
+  for (const auto & elem : *mesh().getActiveLocalElementRange())
   {
-    int32_t uid = openmc::model::cells[i]->universe_;
-    auto it = openmc::model::universe_map.find(uid);
+    i++;
+    const auto & elem_id = elem->id();
+    const auto & univ_id = elem->subdomain_id();
+
+    // Create cells for each element of the domain and assign their universe to the block
+    openmc::model::cells[i] = gsl::make_unique<openmc::CSGCell>();
+    openmc::model::cells[i]->id_ = elem_id;
+    openmc::model::cells[i]->universe_ = univ_id;
+    openmc::model::cell_map[elem_id] = elem_id;
+
+    // Add all universes to the universe map, and keep track of the cells in each universe
+    auto it = openmc::model::universe_map.find(univ_id);
     if (it == openmc::model::universe_map.end())
     {
       openmc::model::universes.push_back(gsl::make_unique<openmc::Universe>());
-      openmc::model::universes.back()->id_ = uid;
-      openmc::model::universes.back()->cells_.push_back(i);
-      openmc::model::universe_map[uid] = openmc::model::universes.size() - 1;
+      openmc::model::universes.back()->id_ = univ_id;
+      openmc::model::universes.back()->cells_.push_back(elem_id);
+      openmc::model::universe_map[univ_id] = openmc::model::universes.size() - 1;
     }
     else
-    {
-      openmc::model::universes[it->second]->cells_.push_back(i);
-    }
+      openmc::model::universes[it->second]->cells_.push_back(elem_id);
   }
 
   // TODO Initialize this nicer
@@ -340,7 +342,7 @@ OpenMCStudy::defineRays()
   if (_verbose)
     _console << "Defining " << _source_bank_size << " rays" << std::endl;
 
-  // Initialize total weight and tallies list
+  // Initialize total weight, tallies list, reset fission bank
   openmc::initialize_batch();
   openmc::initialize_generation();
 
@@ -426,8 +428,12 @@ OpenMCStudy::postExecuteStudy()
     finalizeGeneration();
   }
 
-  // Reduce all tallies, write state/source_point, run CMFD,
+  // Stop openmc from reducing tallies (arrays are not the same size)
+  openmc::mpi::n_procs = 1;
+
+  // Reduce all tallies, write state/source_point, run CMFD
   openmc::finalize_batch();
+  openmc::mpi::n_procs = comm().size();
 }
 
 void

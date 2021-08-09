@@ -35,6 +35,7 @@ CollisionKernel::validParams()
                                                      "Blocks on which this kernel is defined.");
   params.addRequiredParam<std::vector<unsigned int>>("materials",
                                                      "OpenMC material ids for each block.");
+  params.addParam<Real>("z_coord", 0, "The axial coordinate for 2D calculations");
   params.addParam<bool>("verbose", false, "Whether to print collision information");
 
   return params;
@@ -43,6 +44,8 @@ CollisionKernel::validParams()
 CollisionKernel::CollisionKernel(const InputParameters & params)
   : IntegralRayKernelBase(params),
     _T(coupledValue("temperature")),
+    _is_2D(_mesh.dimension() == 2),
+    _z_coord(getParam<Real>("z_coord")),
     _verbose(getParam<bool>("verbose"))
 {
   // Check that the temperature variable is a constant monomial
@@ -50,9 +53,15 @@ CollisionKernel::CollisionKernel(const InputParameters & params)
   if (getFieldVar("temperature", 0)->order() != 1)
     paramError("temperature", "Only CONST MONOMIAL temperatures are currently supported.");
 
+  // Check for 2D parameters
+  if (_is_2D && !params.isParamSetByUser("z_coord"))
+    mooseError("The z_coord parameter must be specified for 2D calculations");
+
   // Build map from subdomains to OpenMC materials
   const auto blocks = getParam<std::vector<unsigned int>>("blocks");
   const auto materials = getParam<std::vector<unsigned int>>("materials");
+  if (blocks.size() != materials.size())
+    paramError("blocks", "The blocks parameter must be the same size as the materials parameter.");
   for (unsigned int i = 0; i < blocks.size(); i++)
     _block_to_openmc_materials.insert(std::make_pair<int, int>(blocks[i], materials[i]));
 
@@ -76,6 +85,11 @@ CollisionKernel::initialSetup()
     if (search == openmc::model::material_map.end())
       mooseError("Could not find material ", m.second, " in OpenMC materials.");
   }
+
+  // Check that all blocks exist, as a sanity check only
+  for (auto & b : _block_to_openmc_materials)
+    if (!hasBlocks(b.first))
+      mooseWarning("Could not find specified block ", b.first, " for the collision kernel.");
 }
 
 void
@@ -84,9 +98,12 @@ CollisionKernel::onSegment()
   // Use a fake neutron to compute the cross sections
   auto p = &_particles[_tid];
 
-  // resize to account for filters specified in moose
+  // Resize to account for filters specified in moose (only needed once)
+  // TODO Move to inital setup once can show that all tallies have already been added
   p->filter_matches().resize(openmc::model::tally_filters.size());
-  p->sqrtkT() = std::sqrt(openmc::K_BOLTZMANN * _T[0]);
+
+  // Set particle attributes
+  p->sqrtkT() = std::sqrt(openmc::K_BOLTZMANN * _T[_qp]);
   p->material() = _block_to_openmc_materials.at(_current_elem->subdomain_id()) - 1;
   p->coord(p->n_coord() - 1).universe = _current_subdomain_id;
   p->coord(p->n_coord() - 1).cell = _current_elem->id();
@@ -101,7 +118,7 @@ CollisionKernel::onSegment()
 
   // To avoid an overflow in the n_progeny array for neutrons which would have
   // changed domain, we adjust the value, however this prevents us from using the
-  // openmc sorting algorithm
+  // openmc sorting algorithm when using domain decomposition
   if (p->id() - 1 - openmc::simulation::work_index[comm().rank()] >=
       openmc::simulation::work_per_rank)
     p->id() = 1 + openmc::simulation::work_index[comm().rank()];
@@ -154,11 +171,19 @@ CollisionKernel::onSegment()
         currentRay()->currentPoint() -
         (_current_segment_length - collision_distance) * currentRay()->direction();
 
+    // Adapt for two dimensions
+    if (_is_2D)
+      current_position(2) = _z_coord;
+
     // Set the particle position to the collision location for banking sites
     p->r() = {current_position(0), current_position(1), current_position(2)};
 
     // Compute collision
     p->event_collide();
+
+    mooseAssert(!std::isnan(p->u()[0]) && !std::isnan(p->u()[1]) && !std::isnan(p->u()[2]) &&
+                    !std::isnan(p->E() && p->E() >= 0),
+                "Invalid particle energy and direction after collision.");
 
     if (_verbose)
       _console << "Collision event " << int(p->event()) << " Energy " << currentRay()->auxData(0)
@@ -166,8 +191,13 @@ CollisionKernel::onSegment()
                << p->material() << " progeny " << p->n_progeny() << " ids " << p->id() << " / "
                << currentRay()->id() << std::endl;
 
-    // Update Ray direction
+    // Scattering direction is stored on neutron
     Point new_direction(p->u()[0], p->u()[1], p->u()[2]);
+
+    // Adapt for two dimensions
+    if (_is_2D)
+      new_direction(2) = 0;
+
     if (p->event() == openmc::TallyEvent::SCATTER)
       changeRayStartDirection(current_position, new_direction);
 
@@ -205,6 +235,11 @@ CollisionKernel::onSegment()
       // Create a new Ray with starting information
       Point start(p->r()[0], p->r()[1], p->r()[2]);
       Point direction(p->u()[0], p->u()[1], p->u()[2]);
+      if (_is_2D)
+      {
+        start(2) = _z_coord;
+        direction(2) = 0;
+      }
       std::shared_ptr<Ray> ray = acquireRay(start, direction);
 
       if (_verbose)
