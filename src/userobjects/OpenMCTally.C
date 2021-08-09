@@ -16,6 +16,7 @@
 #include "openmc/tallies/filter_universe.h"
 #include "openmc/tallies/filter_cell.h"
 #include "openmc/particle_data.h"
+#include "openmc/nuclide.h"
 
 #include <xtensor/xio.hpp>
 #include <xtensor/xtensor.hpp>
@@ -180,7 +181,21 @@ OpenMCTally::initialize()
   model::tallies.back()->set_scores(_scores);
 
   // Add nuclides
-  model::tallies.back()->set_nuclides(_nuclides);
+  if (_nuclides[0] == "all")
+  {
+    model::tallies.back()->nuclides_.reserve(data::nuclides.size() + 1);
+    for (auto i = 0; i < data::nuclides.size(); ++i)
+      model::tallies.back()->nuclides_.push_back(i);
+    model::tallies.back()->nuclides_.push_back(-1);
+    model::tallies.back()->all_nuclides_ = true;
+  }
+  else if (_nuclides[0] != "total")
+  {
+    _nuclides.push_back("total");
+    model::tallies.back()->set_nuclides(_nuclides);
+  }
+  else
+    model::tallies.back()->set_nuclides(_nuclides);
 
   // Set the tally estimator
   // get rid of switch with enum to string method?

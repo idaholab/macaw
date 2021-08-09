@@ -96,9 +96,16 @@ OpenMCTallyAux::computeValue()
     // check if individual nuclides are scored in tally and find the index
     if (t->nuclides_[0] != -1)
     {
-      auto nuc_i = openmc::data::nuclide_map[_nuclide];
-      auto it = find(t->nuclides_.begin(), t->nuclides_.end(), nuc_i);
-      nuc_bin = it - t->nuclides_.begin();
+      if (_nuclide == "all")
+      {
+        nuc_bin = t->nuclides_.size() - 1;
+      }
+      else
+      {
+        auto nuc_i = openmc::data::nuclide_map[_nuclide];
+        auto it = find(t->nuclides_.begin(), t->nuclides_.end(), nuc_i);
+        nuc_bin = it - t->nuclides_.begin();
+      }
     }
     else
       nuc_bin = 0;
@@ -165,15 +172,9 @@ OpenMCTallyAux::computeValue()
         for (int j = energy_start; j < energy_end; ++j)
         {
           filter_index = _current_elem->subdomain_id() * univ_stride + j * energy_stride;
-          std::cout << filter_index << std::endl;
-          //std::cout << xt::adapt(t->results_.shape()) << std::endl;
-
           val += xt::view(t->results_, filter_index, score_index, 1);
-
         }
-        std::cout << "val: " << val << std::endl;
-        // insert universe
-        // mooseError("Universe Tally retrieving currently not supported");
+
         break;
       case 2:
 
