@@ -2,23 +2,23 @@
   [gmg]
     type = GeneratedMeshGenerator
     dim = 3
-    nx = 5
-    ny = 5
+    nx = 10
+    ny = 10
     nz = 1
-    xmin = -2.5
-    ymin = -2.5
-    zmin = -2.5
-    xmax = 2.5
-    ymax = 2.5
-    zmax = 2.5
+    xmin = -5
+    ymin = -5
+    zmin = -5
+    xmax = 5
+    ymax = 5
+    zmax = 5
   []
-  # [add_subdomain]
-  #   input = gmg
-  #   type = SubdomainBoundingBoxGenerator
-  #   top_right = '0.5 0.5 2.5'
-  #   bottom_left = '-0.5 -0.5 -2.5'
-  #   block_id = 1
-  # []
+  [add_subdomain]
+    input = gmg
+    type = SubdomainBoundingBoxGenerator
+    top_right = '3 3 5'
+    bottom_left = '-3 -3 -5'
+    block_id = 1
+  []
 []
 
 [Problem]
@@ -32,7 +32,7 @@
   initial_condition = 300
 []
 
-[AuxVariables/power]
+[AuxVariables/tally]
   order = CONSTANT
   family = MONOMIAL
 []
@@ -41,9 +41,9 @@
   type = CollisionKernel
   temperature = temperature
   # mesh block ids
-  blocks = "0"
+  blocks = "0 1"
   # openmc material id
-  materials = "1"
+  materials = "4 1"
   # verbose = true
 []
 
@@ -55,7 +55,7 @@
 []
 
 [UserObjects]
-  inactive = 'univtally'
+  active = 'study celltally'
 
   [study]
     type = OpenMCStudy
@@ -75,11 +75,11 @@
 
   [univtally]
     type = OpenMCTally
+    id = 1
     particle_type = 'neutron'
     estimator = 'COLLISION'
-    scores = 'kappa-fission'
+    scores = 'flux fission'
     filters = 'universe'
-    filter_ids = 1
     execute_on = 'initial'
   []
 
@@ -89,8 +89,8 @@
     particle_type = 'neutron'
     estimator = 'COLLISION'
     scores = 'flux fission'
-    filters = 'cell energy'
-    energy_bins = '1e-5 1e5 1e7'
+    filters = 'cell'
+    # energy_bins = '1e-5 1e5 1e7'
     # nuclides = 'U235 O16 U238'
     execute_on = 'initial'
   []
@@ -103,6 +103,14 @@
 [Outputs]
   exodus = true
   csv = true
+  # [rays]
+  #   type = RayTracingExodus
+  #   study = study
+  #   output_data = true # enable for data output
+  #   # output_data_nodal = true # enable for nodal data output
+  #   output_aux_data = true
+  #   execute_on = final
+  # []
 []
 
 # To look at domain decomposition
@@ -118,13 +126,13 @@
   [cell_val]
     type = OpenMCTallyAux
     tally_id = 1
-    granularity = cell
+    granularity = universe
     estimator = COLLISION
     particle_type = neutron
     execute_on = TIMESTEP_END
-    variable = power
+    variable = tally
     # nuclide = 'U238'
-    score = 'flux'
-    energy_bin = 0
+    score = 'fission'
+    # energy_bin = 0
   []
 []
