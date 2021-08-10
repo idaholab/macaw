@@ -78,6 +78,7 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
     _claim_rays(*this, _rays, _local_rays, true),
     _claim_rays_timer(registerTimedSection("claimRays", 1)),
     _define_rays_timer(registerTimedSection("defineRays", 1)),
+    _is_2D(_mesh.dimension() == 2),
     _verbose(getParam<bool>("verbose"))
 {
   /*
@@ -394,7 +395,9 @@ OpenMCStudy::defineRays()
     // Set starting information
     Point start(p.r()[0], p.r()[1], p.r()[2]);
     Point direction(p.u()[0], p.u()[1], p.u()[2]);
-
+    if (_is_2D)
+      direction(2) = 0;
+  
     // Claimer will locate the starting point
     ray->setStart(start);
     ray->setStartingDirection(direction);

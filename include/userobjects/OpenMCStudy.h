@@ -64,9 +64,12 @@ private:
   /// Timing for defining rays
   PerfID _define_rays_timer;
 
-  // The size of the particle source bank on this process
+  /// The size of the particle source bank on this process
   unsigned int _source_bank_size;
 
-  // Whether to output which stage of the simulation the solver is going through
+  /// Whether the case is 2D, in which case we cannot start vertical rays
+  const bool _is_2D;
+
+  /// Whether to output which stage of the simulation the solver is going through
   const bool _verbose;
 };
