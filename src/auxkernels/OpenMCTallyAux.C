@@ -73,7 +73,7 @@ OpenMCTallyAux::OpenMCTallyAux(const InputParameters & params)
 double
 OpenMCTallyAux::computeValue()
 {
-  double val = 0;
+  xt::xarray<double> val = 0;
   int filter_index;
   int score_index;
   int nuc_bin;
@@ -113,8 +113,9 @@ OpenMCTallyAux::computeValue()
     // find the score bin and stride length to get score index
     int mt = openmc::reaction_type(_score);
     auto it = find(t->scores_.begin(), t->scores_.end(), mt);
-    if (it == t->scores_.end()) paramError("score","The specified score does not exist in"
-                                            "given tally");
+    if (it == t->scores_.end())
+      paramError("score","The specified score does not exist in given tally");
+
     int score_bin = it - t->scores_.begin();
     int score_stride = t->nuclides_.size();
 
@@ -164,10 +165,12 @@ OpenMCTallyAux::computeValue()
         break;
       case 1:
 
-        if (!has_univ_filter) mooseError("Tally does not have a universe filter");
+        if (!has_univ_filter)
+          mooseError("Tally does not have a universe filter");
 
-        if (has_cell_filter) mooseError("Universe granularity does not currently support tallies"
-                                "with both universe and cell filters");
+        if (has_cell_filter)
+          mooseError("Universe granularity does not currently support tallies"
+                     "with both universe and cell filters");
 
         for (int j = energy_start; j < energy_end; ++j)
         {
@@ -198,7 +201,7 @@ OpenMCTallyAux::computeValue()
         break;
     }
 
-    return val;
+    return val[0];
   }
   else
   {
