@@ -1,11 +1,28 @@
 [Mesh]
-  [core]
+  [assembly]
     type = FileMeshGenerator
     file = '31enr_16_in.e'
   []
+  [translate]
+    type = TransformGenerator
+    input = assembly
+    transform = TRANSLATE
+    vector_value = '0 0 -100'
+  []
+  [extrude]
+    type = FancyExtruderGenerator
+    input = 'translate'
+    heights = '20 15 1.748 0.4141 3.3579 57.505 5.715 46.482 5.715 46.482 5.715 46.482 5.715 46.482 5.715 46.482 5.715 37.783 9.298 3.358 2 2.54 3.345 8.827 28.124'
+    # num_layers = '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'  # 25 zones
+    # num_layers = '2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2'  # 25 zones
+    num_layers = '10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10'  # 25 zones
+    direction = '0 0 1'
+    bottom_sideset = '8'
+    top_sideset = '9'
+  []
   [boundaries1]
     type = SideSetsAroundSubdomainGenerator
-    input = 'core'
+    input = 'extrude'
     block = 10016
     normal = ' 1  0  0'
     new_boundary = 'right '
@@ -45,12 +62,12 @@
     normal = '0  0  -1'
     new_boundary = 'bottom'
   []
-  [shift_z]
-    type = TransformGenerator
-    input = 'boundaries6'
-    transform = 'TRANSLATE'
-    vector_value = '0 0 100'
-  []
+  # [shift_z]
+  #   type = TransformGenerator
+  #   input = 'boundaries6'
+  #   transform = 'TRANSLATE'
+  #   vector_value = '0 0 100'
+  # []
 []
 
 [Problem]
@@ -86,7 +103,7 @@
 [RayBCs]
   [reflect]
     type = ReflectRayBC
-    boundary = '1 2 3 4' #'back front top right left bottom'
+    boundary = '1 2 3 4 8 9' #'back front top right left bottom'
   []
 []
 
@@ -105,6 +122,10 @@
     # Needed to cache Ray data for RayTracingMeshOutput
     data_on_cache_traces = true
     aux_data_on_cache_traces = true
+
+    # Extruding does lead to ugly meshes
+    warn_subdomain_hmax = false
+    warn_non_planar = false
   []
 
   [tally]
@@ -134,15 +155,6 @@
     scores = 'kappa-fission'
     filters = 'cell'
     execute_on = 'initial'
-  []
-[]
-
-[VectorPostprocessors]
-  [pin_powers]
-    type = NearestPointIntegralVariablePostprocessor
-    variable = 'power'
-    block = '10010'
-    points_file = pin_file
   []
 []
 
@@ -176,23 +188,24 @@
   []
 []
 
+# To tally reaction rates on a pincell mesh
+[VectorPostprocessors]
+  [pin_powers]
+    type = NearestPointIntegralVariablePostprocessor
+    variable = 'power'
+    block = '10010'
+    points_file = pin_file
+  []
+[]
+
 [MultiApps]
   [pin_mesh]
     type = TransientMultiApp
-    # execute_on = TIMESTEP_END
     input_files = 'output_pin.i'
   []
 []
 
 [Transfers]
-  # [power]
-  #   type = MultiAppProjectionTransfer
-  #   multi_app = pin_mesh
-  #   direction = 'TO_MULTIAPP'
-  #   source_variable = power
-  #   variable = pin_power
-  #   # execute_on = TIMESTEP_END
-  # []
   [power_uo]
     type = MultiAppUserObjectTransfer
     multi_app = pin_mesh
@@ -201,57 +214,4 @@
     variable = pin_power
     execute_on = TIMESTEP_END
   []
-[]
-
-# To measure performance
-[Postprocessors]
-  [total_mem]
-    type = MemoryUsage
-    execute_on = 'INITIAL TIMESTEP_END'
-  []
-  [per_proc]
-    type = MemoryUsage
-    value_type = "average"
-    execute_on = 'INITIAL TIMESTEP_END'
-  []
-  [max_proc]
-    type = MemoryUsage
-    value_type = "max_process"
-    execute_on = 'INITIAL TIMESTEP_END'
-  []
-  [total_time]
-    type = PerfGraphData
-    execute_on = 'INITIAL TIMESTEP_END'
-    data_type = 'TOTAL'
-    section_name = 'Root'
-  []
-  [run_time]
-    type = ChangeOverTimePostprocessor
-    postprocessor = total_time
-    execute_on = 'INITIAL TIMESTEP_END'
-  []
-
-  # Neutrons per second to compare to openmc
-  [num_rays]
-    type = VectorPostprocessorComponent
-    vectorpostprocessor = per_proc_ray_tracing
-    index = 0
-    vector_name = rays_traced
-  []
-  [total_num_rays]
-    type = CumulativeValuePostprocessor
-    postprocessor = num_rays
-  []
-  [neutrons_per_s]
-    type = ParsedPostprocessor
-    pp_names = 'total_num_rays total_time'
-    function = 'total_num_rays / total_time'
-  []
-[]
-
-
-[VectorPostprocessors/per_proc_ray_tracing]
-  type = PerProcessorRayTracingResultsVectorPostprocessor
-  execute_on = TIMESTEP_END
-  study = study
 []
