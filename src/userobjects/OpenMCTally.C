@@ -116,7 +116,7 @@ OpenMCTally::initialize()
   // Sort the filters into a specific order
   std::sort(_filters.begin(), _filters.end(), cmp);
 
-  for (unsigned int i = 0; i < _filters.size(); ++i)
+  for (size_t i = 0; i < _filters.size(); ++i)
   {
     Filter * filter_ptr = Filter::create(_filters.at(i), C_NONE);
 
@@ -146,7 +146,7 @@ OpenMCTally::initialize()
       // Default is every block
       vector<int> universe_ids;
       if (!isParamValid("block_bins"))
-        for (int i = 0; i < model::universes.size(); ++i)
+        for (size_t i = 0; i < model::universes.size(); ++i)
           universe_ids.push_back(i);
       else
         universe_ids = _block_bins;
@@ -162,7 +162,7 @@ OpenMCTally::initialize()
       // Default is every cell
       vector<int> cell_ids;
       if (!isParamValid("cell_bins"))
-        for (int i = 0; i < model::cells.size(); ++i)
+        for (size_t i = 0; i < model::cells.size(); ++i)
           cell_ids.push_back(i);
       else
         cell_ids = _cell_bins;
@@ -184,7 +184,7 @@ OpenMCTally::initialize()
   if (_nuclides[0] == "all")
   {
     model::tallies.back()->nuclides_.reserve(data::nuclides.size() + 1);
-    for (auto i = 0; i < data::nuclides.size(); ++i)
+    for (size_t i = 0; i < data::nuclides.size(); ++i)
       model::tallies.back()->nuclides_.push_back(i);
     model::tallies.back()->nuclides_.push_back(-1);
     model::tallies.back()->all_nuclides_ = true;

@@ -397,7 +397,7 @@ OpenMCStudy::defineRays()
     Point direction(p.u()[0], p.u()[1], p.u()[2]);
     if (_is_2D)
       direction(2) = 0;
-  
+
     // Claimer will locate the starting point
     ray->setStart(start);
     ray->setStartingDirection(direction);
@@ -627,7 +627,7 @@ OpenMCStudy::synchronizeBanks()
            << std::endl;
 
   // Check size of bank before moving sites
-  if (openmc::simulation::source_bank.size() < index_temp)
+  if (openmc::simulation::source_bank.size() < (unsigned)index_temp)
     openmc::simulation::source_bank.resize(index_temp);
 
   // Move fission sites from temporary array to source bank array
@@ -636,7 +636,7 @@ OpenMCStudy::synchronizeBanks()
 
   // Keep track of source bank size
   _source_bank_size = index_temp;
-  if (_source_bank_size < 0)
+  if (index_temp < 0)
     mooseError("Source bank has negative size ", _source_bank_size);
 
   /* End adapted from OpenMC */

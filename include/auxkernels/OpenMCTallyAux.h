@@ -12,8 +12,8 @@
 #include "AuxKernel.h"
 
 /**
- * Retrieves tally values from OpenMC simulation and tranfers the values
- * to a MOOSE auxvariable
+ * Retrieves tally values from OpenMC tallies and tranfers the values
+ * to a MOOSE auxiliary variable
  */
 class OpenMCTallyAux : public AuxKernel
 {
@@ -25,34 +25,33 @@ public:
 protected:
   virtual Real computeValue() override;
 
-  // TODO Add docstring
-  // Whether to use the tally id to retrieve the tally we want to plot
+  /// Whether to use the tally id to retrieve the tally we want to plot
   const bool _retrieve_from_tally_id;
 
-  // id of the tally to retrieve wanted tally value from
+  /// Id of the tally from which the desired score is retrieved
   int _tally_id;
 
-  // Scope of the tally values to retrieve
+  /// Spatial scope of the tally values to retrieve
   const MooseEnum _granularity;
 
-  // Score or reaction to retrieve wanted tally value from
+  /// Score or reaction to retrieve from tally
   std::string _score;
 
-  // particle used for tally
+  /// Particle used in tally to filter events
   const MooseEnum _particle;
 
-  // estimator used in tally
+  /// Estimator used to tally
   const MooseEnum _estimator;
 
-  // Whether to sum over all nuclides
+  /// Whether to sum tally values over all nuclides
   const bool _all_nuclides;
 
-  // Nuclide to retrieve tally value from
+  /// Nuclide to retrieve tally value from
   std::string _nuclide;
 
-  // Whether to sum over all energies
+  /// Whether to sum tally values over all energies
   const bool _all_energies;
 
-  // Energy bin to retrieve tally value from
+  /// Energy bin to retrieve tally value from
   int _energy_bin;
 };

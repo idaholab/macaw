@@ -63,8 +63,6 @@ OpenMCTallyAux::OpenMCTallyAux(const InputParameters & params)
     _nuclide(isParamValid("nuclide") ? getParam<std::string>("nuclide") : "all"),
     _all_energies(!isParamValid("energy_bin")),
     _energy_bin(isParamValid("energy_bin") ? getParam<int>("energy_bin") : -1)
-
-//_filter(getParam<int>("filter"))
 {
   // if (_estimator != openmc::model::tallies[openmc::model::tally_map[_tally_id]]->estimator_)
   //   paramError("estimator", "estimator does not match the estimator of given tally");
@@ -114,14 +112,14 @@ OpenMCTallyAux::computeValue()
     int mt = openmc::reaction_type(_score);
     auto it = find(t->scores_.begin(), t->scores_.end(), mt);
     if (it == t->scores_.end())
-      paramError("score","The specified score does not exist in given tally");
+      paramError("score", "The specified score does not exist in given tally");
 
     int score_bin = it - t->scores_.begin();
     int score_stride = t->nuclides_.size();
 
     score_index = score_bin * score_stride + nuc_bin;
 
-    for (auto i = 0; i < t->filters().size(); ++i)
+    for (size_t i = 0; i < t->filters().size(); ++i)
     {
       auto i_filt = t->filters(i);
       if (openmc::model::tally_filters[i_filt]->type() == "universe")
@@ -145,11 +143,12 @@ OpenMCTallyAux::computeValue()
       }
       else if (openmc::model::tally_filters[i_filt]->type() == "cell")
       {
-        const openmc::CellFilter * cell_filter
-          {dynamic_cast<openmc::CellFilter *>(openmc::model::tally_filters[i_filt].get())};
+        const openmc::CellFilter * cell_filter{
+            dynamic_cast<openmc::CellFilter *>(openmc::model::tally_filters[i_filt].get())};
 
-        if (find(cell_filter->cells().begin(), cell_filter->cells().end(),
-            _current_elem->id()) == cell_filter->cells().end()) return 0;
+        if (find(cell_filter->cells().begin(), cell_filter->cells().end(), _current_elem->id()) ==
+            cell_filter->cells().end())
+          return 0;
 
         cell_bin = cell_filter->map_.at(_current_elem->id());
         cell_stride = t->strides(i);
@@ -185,9 +184,8 @@ OpenMCTallyAux::computeValue()
         // TODO: add case where not all cells are in cell filters
         // can't index by element->id() anymore
 
-
-        if (!has_cell_filter) mooseError("Specified tally does not contain a cell filter");
-
+        if (!has_cell_filter)
+          mooseError("Specified tally does not contain a cell filter");
 
         for (int i = univ_start; i < univ_end; ++i)
         {

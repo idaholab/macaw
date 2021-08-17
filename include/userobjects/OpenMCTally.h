@@ -31,8 +31,6 @@ public:
 
   void execute(){};
 
-  void threadJoin(){};
-
   void finalize(){};
 
 protected:
