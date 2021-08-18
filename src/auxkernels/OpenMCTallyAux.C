@@ -43,7 +43,6 @@ OpenMCTallyAux::validParams()
   params.addRequiredParam<MooseEnum>("particle_type", particle_types, "Particle type of the tally");
   params.addParam<std::string>("nuclide", "Nuclide to get tally value for");
   params.addParam<int>("energy_bin", "Energy_bin to get tally value for");
-  // params.addRequiredParam<int>("filter", "Filter id used to get tally value");
 
   // TODO: Add all filters and scores to retrieve in the right bin
   // TODO: Add option to compute std deviation
@@ -146,6 +145,7 @@ OpenMCTallyAux::computeValue()
         const openmc::CellFilter * cell_filter{
             dynamic_cast<openmc::CellFilter *>(openmc::model::tally_filters[i_filt].get())};
 
+        // If the local cell is not in the tally cell filter, tally value is 0
         if (find(cell_filter->cells().begin(), cell_filter->cells().end(), _current_elem->id()) ==
             cell_filter->cells().end())
           return 0;
@@ -157,7 +157,6 @@ OpenMCTallyAux::computeValue()
         cell_filter->get_all_bins(p, openmc::TallyEstimator::COLLISION, match);
         cell_bin = match.bins_[0];
 
-        //->map_.at(_current_elem->id());
         cell_stride = t->strides(i);
         has_cell_filter = true;
       }

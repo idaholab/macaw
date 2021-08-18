@@ -73,26 +73,22 @@
 [RayKernels/collision]
   type = CollisionKernel
   temperature = temperature
+
   # mesh block ids
   blocks = "10000 10001 10004 10006 10008 10009 10010 10013 10014 11006"
-  # blocks = "1 2 3 4 5 6 7 8 9"
   # openmc material id
   materials = "1 2 5 7 9 10 11 14 15 7"
-  # materials = "14 17 1 7 9 10 11 16 15"
-  # verbose = true
   z_coord = 100
 []
 
 [RayBCs]
   [reflect]
     type = ReflectRayBC
-    boundary = '1 2 3 4' #'back front top right left bottom'
+    boundary = '1 2 3 4'
   []
 []
 
 [UserObjects]
-  inactive = 'tally univtally'
-
   [study]
     type = OpenMCStudy
 
@@ -106,6 +102,32 @@
     data_on_cache_traces = true
     aux_data_on_cache_traces = true
   []
+[]
+
+[Executioner]
+  type = Transient
+[]
+
+[Outputs]
+  exodus = true
+  csv = true
+  perf_graph = true
+[]
+
+# To look at domain decomposition
+[AuxVariables/domains]
+[]
+
+[AuxKernels]
+  [domains]
+    type = ProcessorIDAux
+    variable = domains
+  []
+[]
+
+# Tallies
+[UserObjects]
+  inactive = 'tally univtally'
 
   [tally]
     type = OpenMCTally
@@ -137,35 +159,7 @@
   []
 []
 
-[VectorPostprocessors]
-  [pin_powers]
-    type = NearestPointIntegralVariablePostprocessor
-    variable = 'power'
-    block = '10010'
-    points_file = pin_file
-  []
-[]
-
-[Executioner]
-  type = Transient
-[]
-
-[Outputs]
-  exodus = true
-  csv = true
-  perf_graph = true
-[]
-
-# To look at domain decomposition
-[AuxVariables/domains]
-[]
-
 [AuxKernels]
-  [domains]
-    type = ProcessorIDAux
-    variable = domains
-  []
-
   [cell_val]
     type = OpenMCTallyAux
     granularity = 'cell'
@@ -176,30 +170,30 @@
   []
 []
 
+# Plot fission rates on a coarse pin-cell mesh
+[VectorPostprocessors]
+  [pin_powers]
+    type = NearestPointIntegralVariablePostprocessor
+    variable = 'power'
+    block = '10010'
+    points_file = pin_file
+  []
+[]
+
 [MultiApps]
   [pin_mesh]
     type = TransientMultiApp
-    # execute_on = TIMESTEP_END
     input_files = 'output_pin.i'
   []
 []
 
 [Transfers]
-  # [power]
-  #   type = MultiAppProjectionTransfer
-  #   multi_app = pin_mesh
-  #   direction = 'TO_MULTIAPP'
-  #   source_variable = power
-  #   variable = pin_power
-  #   # execute_on = TIMESTEP_END
-  # []
   [power_uo]
     type = MultiAppUserObjectTransfer
     multi_app = pin_mesh
     direction = 'TO_MULTIAPP'
     user_object = pin_powers
     variable = pin_power
-    execute_on = TIMESTEP_END
   []
 []
 
@@ -231,7 +225,7 @@
     execute_on = 'INITIAL TIMESTEP_END'
   []
 
-  # Neutrons per second to compare to openmc
+  # Particles per second to compare to openmc
   [num_rays]
     type = VectorPostprocessorComponent
     vectorpostprocessor = per_proc_ray_tracing
@@ -242,16 +236,17 @@
     type = CumulativeValuePostprocessor
     postprocessor = num_rays
   []
-  [neutrons_per_s]
+  [particles_per_s]
     type = ParsedPostprocessor
     pp_names = 'total_num_rays total_time'
     function = 'total_num_rays / total_time'
   []
 []
 
-
-[VectorPostprocessors/per_proc_ray_tracing]
-  type = PerProcessorRayTracingResultsVectorPostprocessor
-  execute_on = TIMESTEP_END
-  study = study
+[VectorPostprocessors]
+  [per_proc_ray_tracing]
+    type = PerProcessorRayTracingResultsVectorPostprocessor
+    execute_on = TIMESTEP_END
+    study = study
+  []
 []
