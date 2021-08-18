@@ -150,7 +150,14 @@ OpenMCTallyAux::computeValue()
             cell_filter->cells().end())
           return 0;
 
-        cell_bin = cell_filter->map_.at(_current_elem->id());
+        // Get cell bin, only 1 coordinate level in MaCaw
+        openmc::Particle p;
+        p.coord(0).cell = _current_elem->id();
+        openmc::FilterMatch match;
+        cell_filter->get_all_bins(p, openmc::TallyEstimator::COLLISION, match);
+        cell_bin = match.bins_[0];
+
+        //->map_.at(_current_elem->id());
         cell_stride = t->strides(i);
         has_cell_filter = true;
       }

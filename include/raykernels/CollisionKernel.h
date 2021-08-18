@@ -43,5 +43,5 @@ protected:
   const Real _z_coord;
 
   /// whether to print detailed collision information
-  const bool & _verbose;
+  const bool _verbose;
 };
