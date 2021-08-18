@@ -12,14 +12,14 @@
     ymax = 5
     zmax = 5
   []
-  [./add_subdomain]
+  [add_subdomain]
     input = gmg
     type = SubdomainBoundingBoxGenerator
     top_right = '1 1 1'
     bottom_left = '-1 -1 -1'
     block_id = 1
     block_name = 'center'
-  [../]
+  []
 []
 
 [Problem]
@@ -40,7 +40,6 @@
   temperature = temperature
   blocks = "0 1 2"
   materials = "1 2 3"  # openmc material id minus one !
-  # verbose = true
 []
 
 [RayBCs]
@@ -75,32 +74,7 @@
     type = RayTracingExodus
     study = study
     output_data = true # enable for data output
-    # output_data_nodal = true # enable for nodal data output
     output_aux_data = true
     execute_on = final
   []
-[]
-
-# To look at domain decomposition
-[AuxVariables/domain]
-[]
-
-[AuxKernels]
-  [domains]
-    type = ProcessorIDAux
-    variable = domain
-  []
-[]
-
-[Postprocessors]
-  # [diag_line_integral]
-  #   type = RayIntegralValue
-  #   ray_kernel = u_integral
-  #   # ray = diag
-  # []
-  # [right_up_line_integral]
-  #   type = RayIntegralValue
-  #   ray_kernel = u_integral
-  #   # ray = right_up
-  # []
 []

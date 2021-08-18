@@ -103,7 +103,7 @@ CollisionKernel::onSegment()
   p->filter_matches().resize(openmc::model::tally_filters.size());
 
   // Set particle attributes
-  p->sqrtkT() = std::sqrt(openmc::K_BOLTZMANN * _T[_qp]);
+  p->sqrtkT() = std::sqrt(openmc::K_BOLTZMANN * _T[0]);
   p->material() = _block_to_openmc_materials.at(_current_elem->subdomain_id()) - 1;
   p->coord(p->n_coord() - 1).universe = _current_subdomain_id;
   p->coord(p->n_coord() - 1).cell = _current_elem->id();

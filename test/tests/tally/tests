@@ -9,14 +9,17 @@
     requirement = "The system shall be able to specify a tally acting on neutrons only."
   []
   [energy_filter]
-    ...
-  []
-  [collision_estimator]
-    ...
-  []
-  [analog_estimator]
-    ...
+    type = Exodiff
+    input = openmc_tally.i
+    exodiff = energy_filter.e
+    cli_args = "Outputs/file_base=energy_filter UserObjects/active='study energy_filter'"
+    requirement = "The system shall be able to specify a tally acting on neutrons only."
   []
   [fission_rate]
-    ...
+    type = Exodiff
+    input = openmc_tally.i
+    exodiff = fission_rate.e
+    cli_args = "Outputs/file_base=fission_rate UserObjects/active='study fission_rate'"
+    requirement = "The system shall be able to specify a tally acting on neutrons only."
   []
+[]
