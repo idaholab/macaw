@@ -17,10 +17,7 @@
 class InputParameters;
 
 /**
- * User object intermediate base class that declares an interface for providing generic fields
- * by name. Note: This object is intentionally inherited from GeneralUserObject (not elemental)
- * because several cases exist where we need to perform more complex operations possibly over
- * non-local elements
+ * Adds a tally to the OpenMC simulation.
  */
 class OpenMCTally : public GeneralUserObject
 {
@@ -29,34 +26,63 @@ public:
 
   OpenMCTally(const InputParameters & parameters);
 
-  void execute();
-
+  // Set up filters, bins and initialize tallies
   void initialize();
 
-  void finalize();
+  void execute(){};
 
-  void threadJoin();
+  void finalize(){};
 
 protected:
-  const MooseEnum _tally_particle;
+  // TODO Add docstrings
 
-  const MooseEnum _tally_estimator;
+  // Id to reference in TallyAux
+  int _id;
 
-  std::vector<std::string> _tally_scores;
+  // Particle type to tally values for
+  const MooseEnum _particle;
 
-  std::vector<std::string> _tally_filters;
+  // Estimator type for tally
+  const MooseEnum _estimator;
 
-  std::vector<Real> _tally_energy_bins;
+  // Scores and reactions to tally
+  std::vector<std::string> _scores;
 
-  //  virtual unsigned long getElementalValueLong(dof_id_type /*element_id*/,
-  //                                              const std::string & /*field_name*/) const
-  //  {
-  //    mooseError(name(), " does not satisfy the getElementalValueLong interface");
-  //  }
+  // Filters to use for the tally
+  std::vector<std::string> _filters;
 
-  //  virtual Real getElementalValueReal(dof_id_type /*element_id*/,
-  //                                     const std::string & /*field_name*/) const
-  //  {
-  //    mooseError(name(), " does not satisfy the getElementalValueReal interface");
-  //  }
+  // Nuclides to tally reactions on
+  std::vector<std::string> _nuclides;
+
+  // Energy bin edges for energy filter
+  std::vector<Real> _energy_bins;
+
+  // Cells to use in cell filter
+  std::vector<int> _cell_bins;
+
+  // Blocks to use in universe filter
+  std::vector<int> _block_bins;
 };
+
+/**
+ * Comparison funtion for a custom sort of the specified Filters
+ *so that tally values can be systmatically retieved easily in OpenMCTallyAux
+ */
+bool
+cmp(std::string x, std::string y)
+{
+  if (x == "universe")
+    return true;
+  if (y == "universe")
+    return false;
+  if (x == "cell")
+    return true;
+  if (y == "cell")
+    return false;
+  if (x == "energy")
+    return true;
+  if (y == "energy")
+    return false;
+  else
+    return false;
+}

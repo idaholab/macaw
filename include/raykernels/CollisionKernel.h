@@ -30,12 +30,18 @@ protected:
   /// Holds the temperature in the current element
   const VariableValue & _T;
 
-  // Map from blocks to OpenMC materials
+  /// Map from blocks to OpenMC materials
   std::unordered_map<int, int> _block_to_openmc_materials;
 
-  // OpenMC particle objects to call openmc routines with
+  /// OpenMC particle objects to call openmc routines with
   std::vector<openmc::Particle> _particles;
 
-  // whether to print detailed collision information
-  const bool & _verbose;
+  /// Whether the mesh is 2D
+  const bool _is_2D;
+
+  /// Z-coordinate for 2D calculations
+  const Real _z_coord;
+
+  /// whether to print detailed collision information
+  const bool _verbose;
 };

@@ -2,8 +2,8 @@
   [gmg]
     type = GeneratedMeshGenerator
     dim = 3
-    nx = 5
-    ny = 5
+    nx = 10
+    ny = 10
     nz = 1
     xmin = -5
     ymin = -5
@@ -12,14 +12,13 @@
     ymax = 5
     zmax = 5
   []
-  [./add_subdomain]
+  [add_subdomain]
     input = gmg
     type = SubdomainBoundingBoxGenerator
-    top_right = '1 1 1'
-    bottom_left = '-1 -1 -1'
+    top_right = '3 3 5'
+    bottom_left = '-3 -3 -5'
     block_id = 1
-    block_name = 'center'
-  [../]
+  []
 []
 
 [Problem]
@@ -30,22 +29,22 @@
 
 # Main things we care about for the coupling
 [Variables/temperature]
+  initial_condition = 300
 []
 
-[AuxVariables/power]
+[AuxVariables/tally]
+  order = CONSTANT
+  family = MONOMIAL
 []
 
 [RayKernels/collision]
   type = CollisionKernel
   temperature = temperature
-  blocks = "0 1 2"
-  materials = "0 1 2"  # openmc material id minus one !
-  #verbose = true
-[]
-[RayKernels/u_integral]
-  type = VariableIntegralRayKernel
-  variable = temperature
-  # rays = 'diag right_up'
+  # mesh block ids
+  blocks = "0 1"
+  # openmc material id
+  materials = "4 1"
+  # verbose = true
 []
 
 [RayBCs]
@@ -56,7 +55,7 @@
 []
 
 [UserObjects]
-
+  active = 'study celltally'
 
   [study]
     type = OpenMCStudy
@@ -72,15 +71,27 @@
     aux_data_on_cache_traces = true
   []
 
-  [tally]
+
+
+  [univtally]
     type = OpenMCTally
-
+    id = 1
     particle_type = 'neutron'
-    tally_estimator = 'COLLISION'
-    tally_scores = 'flux scatter (n,fission) 16'
-    tally_filters = 'energy particle'
-    tally_energy_bins = '1e-5 1e3 2e7'
+    estimator = 'COLLISION'
+    scores = 'flux fission'
+    filters = 'universe'
+    execute_on = 'initial'
+  []
 
+  [celltally]
+    type = OpenMCTally
+    id = 1
+    particle_type = 'neutron'
+    estimator = 'COLLISION'
+    scores = 'flux fission'
+    filters = 'cell'
+    # energy_bins = '1e-5 1e5 1e7'
+    # nuclides = 'U235 O16 U238'
     execute_on = 'initial'
   []
 []
@@ -90,38 +101,38 @@
 []
 
 [Outputs]
-  exodus = false
+  exodus = true
   csv = true
-  [rays]
-    type = RayTracingExodus
-    study = study
-    output_data = true # enable for data output
-    # output_data_nodal = true # enable for nodal data output
-    output_aux_data = true
-    execute_on = final
-  []
+  # [rays]
+  #   type = RayTracingExodus
+  #   study = study
+  #   output_data = true # enable for data output
+  #   # output_data_nodal = true # enable for nodal data output
+  #   output_aux_data = true
+  #   execute_on = final
+  # []
 []
 
 # To look at domain decomposition
-[AuxVariables/domain]
+[AuxVariables/domains]
 []
 
 [AuxKernels]
   [domains]
     type = ProcessorIDAux
-    variable = domain
+    variable = domains
   []
-[]
 
-[Postprocessors]
-  # [diag_line_integral]
-  #   type = RayIntegralValue
-  #   ray_kernel = u_integral
-  #   # ray = diag
-  # []
-  # [right_up_line_integral]
-  #   type = RayIntegralValue
-  #   ray_kernel = u_integral
-  #   # ray = right_up
-  # []
+  [cell_val]
+    type = OpenMCTallyAux
+    tally_id = 1
+    granularity = universe
+    estimator = COLLISION
+    particle_type = neutron
+    execute_on = TIMESTEP_END
+    variable = tally
+    # nuclide = 'U238'
+    score = 'fission'
+    # energy_bin = 0
+  []
 []

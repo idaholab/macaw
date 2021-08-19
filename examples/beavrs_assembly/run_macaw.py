@@ -17,6 +17,7 @@ import multiprocessing
 import statistics
 import collections
 import mooseutils
+import os
 
 # Imported from Andrew's PR #18005 to MOOSE
 # Run run_openmc_csg first to get a set of xml files for OpenMC
@@ -64,12 +65,12 @@ def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak'
 
             # Making problem size bigger does not make problem more difficult,
             # it keeps the difficulty constant actually
-            # cmd.append('Mesh/gmg/xmin={}'.format(-5 * scale))
-            # cmd.append('Mesh/gmg/ymin={}'.format(-5 * scale))
-            # cmd.append('Mesh/gmg/zmin={}'.format(-5 * scale))
-            # cmd.append('Mesh/gmg/xmax={}'.format(5 * scale))
-            # cmd.append('Mesh/gmg/ymax={}'.format(5 * scale))
-            # cmd.append('Mesh/gmg/zmax={}'.format(5 * scale))
+            cmd.append('Mesh/gmg/xmin={}'.format(-5 * scale))
+            cmd.append('Mesh/gmg/ymin={}'.format(-5 * scale))
+            cmd.append('Mesh/gmg/zmin={}'.format(-5 * scale))
+            cmd.append('Mesh/gmg/xmax={}'.format(5 * scale))
+            cmd.append('Mesh/gmg/ymax={}'.format(5 * scale))
+            cmd.append('Mesh/gmg/zmax={}'.format(5 * scale))
 
         print(' '.join(cmd))
         out = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -158,7 +159,7 @@ def table(prefix):
 
 if __name__ == '__main__':
 
-    input_file = 'infinite_medium.i'
+    input_file = 'run_assembly.i'
     args = get_args()
 
     if (not args.run or not args.write):
@@ -175,16 +176,16 @@ if __name__ == '__main__':
     #     execute(input_file, prefix, 'normal', samples, mpi, args.replicates, args.write)
 
     # Weak scale
-    if args.run:
-        prefix = 'full_solve_weak_scale'
-        mpi = [2**n for n in range(1, args.weak_levels)]
-        samples = [args.base*m for m in mpi]
-        execute(input_file, prefix, 'normal', samples, mpi, args.write)
+    # if args.run:
+    #     prefix = 'full_solve_weak_scale'
+    #     mpi = [2**n for n in range(1, args.weak_levels)]
+    #     samples = [args.base*m for m in mpi]
+    #     execute(input_file, prefix, 'normal', samples, mpi, args.write)
 
     # Strong scale
     if args.run:
         prefix = 'full_solve_strong_scale'
-        mpi = [2**n for n in range(1, args.weak_levels)]
+        mpi = [2**n for n in range(0, args.weak_levels)]
         samples = [args.base*m for m in mpi]
         execute(input_file, prefix, 'normal', samples, mpi, args.write, 'strong')
 
@@ -199,14 +200,14 @@ if __name__ == '__main__':
     #          yname='mem_per_proc', ylabel='Memory (MiB)')
 
     # Weak scaling plots
-    if True:
-        plot('full_solve_weak_scale', 'time',
-             xname='n_cores', xlabel='Number of cores (-)',
-             yname='run_time', ylabel='Time (sec.)', yerr=('run_time_min', 'run_time_max'))
-
-        plot('full_solve_weak_scale', 'efficiency',
-             xname='n_cores', xlabel='Number of cores (-)',
-             yname='run_time', ylabel='Efficiency (-)')
+    # if True:
+    #     plot('full_solve_weak_scale', 'time',
+    #          xname='n_cores', xlabel='Number of cores (-)',
+    #          yname='run_time', ylabel='Time (sec.)', yerr=('run_time_min', 'run_time_max'))
+    #
+    #     plot('full_solve_weak_scale', 'efficiency',
+    #          xname='n_cores', xlabel='Number of cores (-)',
+    #          yname='run_time', ylabel='Efficiency (-)')
 
 
         # plot('full_solve_weak_scale', 'memory',

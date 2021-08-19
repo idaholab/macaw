@@ -1,7 +1,8 @@
 [Tests]
   [study_run]
-    type = RunApp
+    type = Exodiff
     input = 'openmc_study.i'
+    exodiff = 'openmc_study_rays.e'
     requirement = 'The system shall be able to wrap an OpenMC simulation and interface OpenMC with the ray tracing module.'
     design = 'OpenMCStudy.md'
     issues = '#4'

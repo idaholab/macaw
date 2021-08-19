@@ -36,11 +36,16 @@ private:
   void execute() override;
   void postExecuteStudy() override;
 
-  // TODO Delete if they only provide a timer
   void claimRaysInternal();
   void defineRaysInternal();
 
   void defineRays();
+
+  /// Routine to collect tallies, and void fission bank sourcing and synchronizing
+  void finalizeGeneration();
+
+  /// Routine to synchronize banks across all processors
+  void synchronizeBanks();
 
   /// Routine to warn about potential incompatibility issues
   void checkOpenMCVersion();
@@ -59,6 +64,12 @@ private:
   /// Timing for defining rays
   PerfID _define_rays_timer;
 
-  // Whether to output which stage of the simulation the solver is going through
-  bool _verbose;
+  /// The size of the particle source bank on this process
+  unsigned int _source_bank_size;
+
+  /// Whether the case is 2D, in which case we cannot start vertical rays
+  const bool _is_2D;
+
+  /// Whether to output which stage of the simulation the solver is going through
+  const bool _verbose;
 };
