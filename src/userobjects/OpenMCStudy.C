@@ -50,16 +50,21 @@ InputParameters
 OpenMCStudy::validParams()
 {
   auto params = RayTracingStudy::validParams();
-  params.addClassDescription("Runs OpenMC like a bawsse.");
+  params.addClassDescription("Runs OpenMC on an unstructured mesh.");
+  params.addParam<bool>("suppress_openmc_output",
+                        true,
+                        "Whether to set OpenMC settings to minimal screen and file output");
+  params.addParam<bool>("has_internal_surface_tallies",
+                        false,
+                        "Whether the simulation has internal surface tallies, in which case we "
+                        "need to keep track of internal sidesets");
   params.addParam<bool>("verbose", true, "Whether to output the current stage of the simulation");
 
+  // Ray tracing study optimizations
   // By default, let's not verify Rays in optimized modes because it's so expensive
 #ifndef NDEBUG
   params.set<bool>("verify_rays", false);
 #endif
-  // We don't typically have internal sidesets in Monte Carlo
-  // params.set<bool>("use_internal_sidesets") = false;
-  // params.suppressParameter<bool>("use_internal_sidesets");
   // particles dont need to be named
   params.addPrivateParam<bool>("_use_ray_registration", false);
   // We manage banking Rays as needed on our own
@@ -79,6 +84,8 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
     _claim_rays_timer(registerTimedSection("claimRays", 1)),
     _define_rays_timer(registerTimedSection("defineRays", 1)),
     _is_2D(_mesh.dimension() == 2),
+    // _use_internal_sidesets(getParam<bool>("has_internal_surface_tallies")),
+    _suppress_openmc_output(getParam<bool>("suppress_openmc_output")),
     _verbose(getParam<bool>("verbose"))
 {
   /*
@@ -113,6 +120,10 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
   if (_verbose)
     _console << "Initializing OpenMC simulation" << std::endl;
 
+  // Minimize console output from OpenMC
+  if (_suppress_openmc_output)
+    openmc::settings::verbosity = 1;
+
   // Initialize run
   char * argv[1] = {(char *)"openmc"};
   int err = openmc_init(1, argv, &_communicator.get());
@@ -125,21 +136,21 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
       openmc::settings::run_mode == openmc::RunMode::VOLUME)
     mooseError("Requested run mode is currently not supported by MaCaw");
 
+  // Minimize file output from OpenMC
+  if (_suppress_openmc_output)
+  {
+    openmc::settings::output_tallies = false;
+    openmc::settings::statepoint_batch.clear();
+  }
+
+  // Initializes data, tallies, banks, nuclide indexing
   openmc_simulation_init();
-  // does data OK
-  // work TODO -> no need here
-  // banks TODO -> no need for us
-  // tally initialization TODO
-  // nuclide index mapping OK
 
   // Set size of source bank for the first batch
   _source_bank_size = openmc::simulation::work_per_rank;
 
   // Single level tree to represent block containing cells
   openmc::model::n_coord_levels = 1;
-
-  // TODO Figure out how to distribute that
-  // TODO Use active elements, for adaptivity
 
   // Resize the number of cells in openmc to the number of elements in moose
   openmc::model::cells.resize(_mesh.getMesh().n_active_local_elem());
@@ -190,60 +201,6 @@ OpenMCStudy::OpenMCStudy(const InputParameters & params)
     dynamic_cast<Transient *>(_app.getExecutioner())->forceNumSteps(openmc::settings::n_batches);
   else
     mooseWarning("Unable to set the number of batches for a non Transient Executioner");
-
-  /* LONG TERM : REDO INITIALIZATION AND SKIP WHAT ISNT NECESSARY */
-  // // Initialize nuclear data (energy limits, log grid)
-  // if (openmc::settings::run_CE) {
-  //   initialize_data();
-  // }
-  //
-  // // Determine how much work each process should do
-  // openmc::calculate_work();  // for bank sizes, just REDO
-  //
-  // // Allocate source, fission and surface source banks.
-  // openmc::allocate_banks();  // REDO, all dynamic! =_rays?
-  //
-  // // Allocate tally results arrays if they're not allocated yet
-  // // for (auto& t : openmc::model::tallies) {
-  // //   t->init_results();  // REDO
-  // // }
-  //
-  // // Set up material nuclide index mapping
-  // for (auto& mat : openmc::model::materials) {
-  //   mat->init_nuclide_index();
-  // }
-  //
-  // // Reset global variables -- this is done before loading state point (as that
-  // // will potentially populate k_generation and entropy)
-  // openmc::simulation::current_batch = 0;
-  // openmc::simulation::k_generation.clear();
-  // // openmc::simulation::entropy.clear();
-  // openmc_reset();
-  //
-  // // If this is a restart run, load the state point data and binary source
-  // // file
-  // if (openmc::settings::restart_run) {
-  //   openmc::load_state_point();
-  //   openmc::write_message("Resuming simulation...", 6);
-  // } else {
-  //   // Only initialize primary source bank for eigenvalue simulations
-  //   if (openmc::settings::run_mode == openmc::RunMode::EIGENVALUE) {
-  //     openmc::initialize_source();
-  //   }
-  // }
-  //
-  // // Display header
-  // if (openmc::mpi::master) {
-  //   if (openmc::settings::run_mode == openmc::RunMode::FIXED_SOURCE) {
-  //     openmc::header("FIXED SOURCE TRANSPORT SIMULATION", 3);
-  //   } else if (openmc::settings::run_mode == openmc::RunMode::EIGENVALUE) {
-  //     openmc::header("K EIGENVALUE SIMULATION", 3);
-  //     if (openmc::settings::verbosity >= 7) openmc::print_columns();
-  //   }
-  // }
-  //
-  // // Set flag indicating initialization is done
-  // openmc::simulation::initialized = true;
 }
 
 
@@ -495,7 +452,9 @@ OpenMCStudy::synchronizeBanks()
   if (_verbose)
     _console << "Synchronizing fission bank" << std::endl;
 
-  /* Adapted from OpenMC */
+  /* The code below, an algorithm for synchronizing the fission bank is heavily inspired
+     and adapted from OpenMC. Most of the node to node communication has been removed,
+     as we do not need to rebalance this way in MaCaw */
   // ==========================================================================
   // Compute total number of fission sites sampled
   int64_t start = 0;

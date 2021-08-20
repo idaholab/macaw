@@ -70,6 +70,9 @@ private:
   /// Whether the case is 2D, in which case we cannot start vertical rays
   const bool _is_2D;
 
+  /// Whether to suppress output from OpenMC
+  const bool _suppress_openmc_output;
+
   /// Whether to output which stage of the simulation the solver is going through
   const bool _verbose;
 };
