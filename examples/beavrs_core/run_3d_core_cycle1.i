@@ -1,3 +1,7 @@
+# ==============================================================================
+# GEOMETRY AND MESH
+# ==============================================================================
+
 [Mesh]
   # Load the full 2D mesh
   [core]
@@ -16,6 +20,7 @@
     top_sideset = '9'
   []
 
+  # Redo all boundaries
   [boundary_removal]
     type = BoundaryDeletionGenerator
     input = extrude
@@ -64,15 +69,33 @@
     normal = '0  0  -1'
     new_sideset_name = 'bottom'
   []
-  [shift_z]
-    type = TransformGenerator
-    input = 'boundaries6'
-    transform = 'TRANSLATE'
-    vector_value = '0 0 100'
+
+  # Repartition mesh on all processes
+  # Full MPI run
+  [Partitioner]
+    type = HierarchicalGridPartitioner
+    nx_nodes = 5
+    ny_nodes = 5
+    nz_nodes = 4
+
+    # 48 processors per node on sawtooth
+    nx_procs = 4
+    ny_procs = 4
+    nz_procs = 3
   []
+
+  # Shared memory run
+  # [Partitioner]
+  #    type = GridPartitioner
+  #    nx_nodes = 5
+  #    ny_nodes = 5
+  #    nz_nodes = 4
+  #  []
 []
 
-
+# ==============================================================================
+# SET UP OPENMC SIMULATION IN MOOSE
+# ==============================================================================
 
 [Problem]
   solve = false
@@ -97,11 +120,13 @@
   # mesh block ids
   blocks = "10000 10001 10004 10006 10008 10009 10010 10013 10014"
   # blocks = "1 2 3 4 5 6 7 8 9"
+
   # openmc material id
   materials = "1 2 5 7 9 10 11 14 15"
   # materials = "14 17 1 7 9 10 11 16 15"
+
   # verbose = true
-  z_coord = 100
+  # z_coord = 100
 []
 
 [RayBCs]
@@ -112,7 +137,6 @@
 []
 
 [UserObjects]
-  # inactive = 'tally univtally'
 
   [study]
     type = OpenMCStudy
@@ -128,10 +152,19 @@
     aux_data_on_cache_traces = true
 
     # Parameters to make it work for now
-    # replicated = false
     tolerate_failure = true
   []
+[]
 
+[Executioner]
+  type = Transient
+[]
+
+# ==============================================================================
+# TALLIES
+# ==============================================================================
+
+[UserObjects]
   [tally]
     type = OpenMCTally
     id = 3
@@ -167,26 +200,7 @@
   []
 []
 
-[Executioner]
-  type = Transient
-[]
-
-[Outputs]
-  exodus = false
-  csv = true
-  perf_graph = true
-[]
-
-# To look at domain decomposition
-[AuxVariables/domains]
-[]
-
 [AuxKernels]
-  [domains]
-    type = ProcessorIDAux
-    variable = domains
-  []
-
   # [cell_val]
   #   type = OpenMCTallyAux
   #   tally_id = 6
@@ -195,15 +209,8 @@
   # []
 []
 
-[VectorPostprocessors]
-  [mem]
-    type = VectorMemoryUsage
-    execute_on = 'INITIAL TIMESTEP_END'
-    report_peak_value = true
-    mem_units = megabytes
-  []
-
-  # Output on a pincell mesh
+# Output on a pincell mesh
+[UserObjects]
   [pin_powers]
     type = NearestPointIntegralVariablePostprocessor
     variable = 'power'
@@ -230,3 +237,34 @@
 #     execute_on = TIMESTEP_END
 #   []
 # []
+
+
+# ==============================================================================
+# SIMULATION PERFORMANCE STUDY
+# ==============================================================================
+
+[Outputs]
+  exodus = false
+  csv = true
+  perf_graph = true
+[]
+
+# To look at domain decomposition
+[AuxVariables/domains]
+[]
+
+[AuxKernels]
+  [domains]
+    type = ProcessorIDAux
+    variable = domains
+  []
+[]
+
+[VectorPostprocessors]
+  [mem]
+    type = VectorMemoryUsage
+    execute_on = 'INITIAL TIMESTEP_END'
+    report_peak_value = true
+    mem_units = megabytes
+  []
+[]
