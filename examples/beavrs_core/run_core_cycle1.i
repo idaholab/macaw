@@ -1,7 +1,7 @@
 [Mesh]
   [core]
     type = FileMeshGenerator
-    file = 'quarter_core_2d.e'
+    file = 'core_2d.e'
   []
   [boundaries1]
     type = SideSetsAroundSubdomainGenerator
@@ -188,7 +188,7 @@
 []
 
 # Output on a pincell mesh
-[UserObjects]
+[VectorPostprocessors]
   [pin_powers]
     type = NearestPointIntegralVariablePostprocessor
     variable = 'power'

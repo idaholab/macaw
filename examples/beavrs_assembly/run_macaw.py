@@ -40,7 +40,7 @@ def get_args():
     parser.add_argument('--write', action='store_true', help="Toggle writing to results directory")
     return parser.parse_args()
 
-def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak', parallel_mode='mpi'):
+def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak', parallel_mode='openmp'):
     data = collections.defaultdict(list)
     if mpi is None: mpi = [1]*len(samples)
     exe = mooseutils.find_moose_executable_recursive()
@@ -57,8 +57,11 @@ def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak'
             raise ValueError('Unknown parallel mode', parallel_mode)
 
         # Build command
-        cmd = ['mpiexec', '-n', str(n_mpi), '-bind-to', 'core', exe, '-i', infile, '--n-threads='+str(n_threads),
-               'Outputs/file_base={}'.format(mode)]
+        if parallel_mode == 'mpi':
+            cmd = ['mpiexec', '-n', str(n_mpi), '-bind-to', 'core', exe, '-i', infile, '--n-threads='+str(n_threads),
+                   'Outputs/file_base={}'.format(mode)]
+        elif parallel_mode == 'openmp':
+            cmd = [exe, '-i', infile, '--n-threads='+str(n_threads), 'Outputs/file_base={}'.format(mode)]
 
         if scaling == 'weak':
             if '3d' in input_file:
@@ -68,6 +71,10 @@ def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak'
             print("Uniform refinement : ", refinement)
 
             cmd.append("-r " + str(refinement))
+
+        # Use distributed mesh with mpi
+        if parallel_mode == 'mpi':
+            cmd.append('--distributed-mesh')
 
         print(' '.join(cmd))
         out = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -218,7 +225,7 @@ if __name__ == '__main__':
 
         plot('full_solve_strong_scale', 'speedup',
              xname='n_cores', xlabel='Number of cores (-)',
-             yname='run_time', ylabel='spedup (-)')
+             yname='run_time', ylabel='speedup (-)')
 
         plot('full_solve_strong_scale', 'efficiency',
              xname='n_cores', xlabel='Number of cores (-)',
