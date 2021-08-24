@@ -23,7 +23,7 @@ import os
 # Imported from Andrew's PR #18005 to MOOSE
 # Run run_openmc_csg first to get a set of xml files for OpenMC
 
-input_file = 'run_assembly.i'
+input_file = 'run_assembly_3d.i'
 
 # Weak  : growing problem size
 # Strong: constant problem size, run time should go down, measure speedup
@@ -40,7 +40,7 @@ def get_args():
     parser.add_argument('--write', action='store_true', help="Toggle writing to results directory")
     return parser.parse_args()
 
-def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak', parallel_mode='openmp'):
+def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak', parallel_mode='mpi'):
     data = collections.defaultdict(list)
     if mpi is None: mpi = [1]*len(samples)
     exe = mooseutils.find_moose_executable_recursive()
@@ -50,15 +50,20 @@ def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak'
         if parallel_mode == 'openmp':
             n_threads = n_cores
             n_mpi = 1
+
+            # Export OpenMP environment variables for usually optimum binding
+            os.environ["OMP_PLACES"] = "cores"
+            os.environ["OMP_PROC_BIND"] = "close"
+
         elif parallel_mode == 'mpi':
             n_threads = 1
             n_mpi = n_cores
         else:
             raise ValueError('Unknown parallel mode', parallel_mode)
 
-        # Build command
+        # Build command  , '-bind-to', 'socket',
         if parallel_mode == 'mpi':
-            cmd = ['mpiexec', '-n', str(n_mpi), '-bind-to', 'core', exe, '-i', infile, '--n-threads='+str(n_threads),
+            cmd = ['mpiexec', '-n', str(n_mpi), exe, '-i', infile, '--n-threads='+str(n_threads),
                    'Outputs/file_base={}'.format(mode)]
         elif parallel_mode == 'openmp':
             cmd = [exe, '-i', infile, '--n-threads='+str(n_threads), 'Outputs/file_base={}'.format(mode)]
@@ -75,6 +80,11 @@ def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak'
         # Use distributed mesh with mpi
         if parallel_mode == 'mpi':
             cmd.append('--distributed-mesh')
+            cmd.append("Transfers/active=''")  # no distributed MultiAppUserObjectTransfer
+
+        # Other optimizations
+        cmd.append('Outputs/exodus=false')
+        cmd.append("MultiApps/active=''")
 
         print(' '.join(cmd))
         out = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -188,7 +198,7 @@ if __name__ == '__main__':
     # Strong scale
     if args.run:
         prefix = 'full_solve_strong_scale'
-        mpi = [1,2,4,6,8,12,16,20,24,28,32,40,50,56]
+        mpi = [1,2,4,6,8,12,16,24,32,40,52]
         samples = [args.base*m for m in mpi]
         execute(input_file, prefix, 'normal', samples, mpi, args.write, 'strong')
 
