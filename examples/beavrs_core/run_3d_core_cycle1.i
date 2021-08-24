@@ -6,7 +6,7 @@
   # Load the full 2D mesh
   [core]
     type = FileMeshGenerator
-    file = 'core_2d.e'
+    file = 'full.cpr'
   []
 
   # Extrude it
@@ -16,81 +16,31 @@
     heights = '20 15 1.748 0.4141 3.3579 57.505 5.715 46.482 5.715 46.482 5.715 46.482 5.715 46.482 5.715 46.482 5.715 37.783 9.298 3.358 2 2.54 3.345 8.827 28.124'
     num_layers = '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'  # 25 zones
     direction = '0 0 1'
-    bottom_sideset = '8'
-    top_sideset = '9'
-  []
-
-  # Redo all boundaries
-  [boundary_removal]
-    type = BoundaryDeletionGenerator
-    input = extrude
-    boundary_names = 'top right left bottom'
-  []
-
-  [boundaries1]
-    type = ParsedGenerateSideset
-    input = 'boundary_removal'
-    combinatorial_geometry = 'x>364.888'
-    normal = ' 1  0  0'
-    new_sideset_name = 'right '
-  []
-  [boundaries2]
-    type = ParsedGenerateSideset
-    input = 'boundaries1'
-    combinatorial_geometry = 'x<-0.673'
-    normal = '-1  0  0'
-    new_sideset_name = 'left'
-  []
-  [boundaries3]
-    type = ParsedGenerateSideset
-    input = 'boundaries2'
-    combinatorial_geometry = 'y>0.673'
-    normal = '0  1  0'
-    new_sideset_name = 'front'
-  []
-  [boundaries4]
-    type = ParsedGenerateSideset
-    input = 'boundaries3'
-    combinatorial_geometry = 'y<-364.888'
-    normal = '0 -1  0'
-    new_sideset_name = 'back'
-  []
-  [boundaries5]
-    type = ParsedGenerateSideset
-    input = 'boundaries4'
-    combinatorial_geometry = 'z>420'  #####
-    normal = '0  0  1'
-    new_sideset_name = 'top'
-  []
-  [boundaries6]
-    type = ParsedGenerateSideset
-    input = 'boundaries5'
-    combinatorial_geometry = 'z<0'
-    normal = '0  0  -1'
-    new_sideset_name = 'bottom'
+    bottom_boundary = '100'
+    top_boundary = '101'
   []
 
   # Repartition mesh on all processes
   # Full MPI run
-  [Partitioner]
-    type = HierarchicalGridPartitioner
-    nx_nodes = 5
-    ny_nodes = 5
-    nz_nodes = 4
-
-    # 48 processors per node on sawtooth
-    nx_procs = 4
-    ny_procs = 4
-    nz_procs = 3
-  []
+  # [Partitioner]
+  #   type = HierarchicalGridPartitioner
+  #   nx_nodes = 5
+  #   ny_nodes = 5
+  #   nz_nodes = 4
+  #
+  #   # 48 processors per node on sawtooth
+  #   nx_procs = 4
+  #   ny_procs = 4
+  #   nz_procs = 3
+  # []
 
   # Shared memory run
-  # [Partitioner]
-  #    type = GridPartitioner
-  #    nx_nodes = 5
-  #    ny_nodes = 5
-  #    nz_nodes = 4
-  #  []
+  [Partitioner]
+     type = GridPartitioner
+     nx = 5
+     ny = 5
+     nz = 4
+   []
 []
 
 # ==============================================================================
@@ -105,18 +55,16 @@
 
 # Main things we care about for the coupling
 [AuxVariables]
-  [temperature]
-    initial_condition = 300
-  []
-  [power]
-    order = CONSTANT
-    family = MONOMIAL
-  []
+  # [temperature]
+  #   order = CONSTANT
+  #   family = MONOMIAL
+  #   initial_condition = 300
+  # []
 []
 
 [RayKernels/collision]
   type = CollisionKernel
-  temperature = temperature
+  temperature = 300 #temperature
   # mesh block ids
   blocks = "10000 10001 10004 10006 10008 10009 10010 10013 10014"
   # blocks = "1 2 3 4 5 6 7 8 9"
@@ -130,9 +78,9 @@
 []
 
 [RayBCs]
-  [reflect]
-    type = ReflectRayBC
-    boundary = 'top right left bottom'
+  [vacuum]
+    type = KillRayBC
+    boundary = 'top right left bottom 100 101'
   []
 []
 
@@ -144,12 +92,16 @@
     execute_on = TIMESTEP_END
 
     # Needed to cache trace information for RayTracingMeshOutput
-    always_cache_traces = true
-    segments_on_cache_traces = true
+    always_cache_traces = false
+    segments_on_cache_traces = false
 
     # Needed to cache Ray data for RayTracingMeshOutput
-    data_on_cache_traces = true
-    aux_data_on_cache_traces = true
+    data_on_cache_traces = false
+    aux_data_on_cache_traces = false
+
+    # Extruding does lead to ugly meshes
+    warn_subdomain_hmax = false
+    warn_non_planar = false
 
     # Parameters to make it work for now
     tolerate_failure = true
@@ -200,6 +152,13 @@
   []
 []
 
+[AuxVariables]
+  [power]
+    order = CONSTANT
+    family = MONOMIAL
+  []
+[]
+
 [AuxKernels]
   # [cell_val]
   #   type = OpenMCTallyAux
@@ -210,7 +169,7 @@
 []
 
 # Output on a pincell mesh
-[UserObjects]
+[VectorPostprocessors]
   [pin_powers]
     type = NearestPointIntegralVariablePostprocessor
     variable = 'power'
@@ -245,12 +204,15 @@
 
 [Outputs]
   exodus = false
+  nemesis = true
   csv = true
   perf_graph = true
 []
 
 # To look at domain decomposition
 [AuxVariables/domains]
+  order = CONSTANT
+  family = MONOMIAL
 []
 
 [AuxKernels]

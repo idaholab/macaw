@@ -51,6 +51,14 @@
     transform = 'TRANSLATE'
     vector_value = '0 0 100'
   []
+
+  # Shared memory run
+  [Partitioner]
+     type = GridPartitioner
+     nx = 10
+     ny = 1
+     nz = 1
+   []
 []
 
 [Problem]
@@ -103,12 +111,12 @@
     execute_on = TIMESTEP_END
 
     # Needed to cache trace information for RayTracingMeshOutput
-    always_cache_traces = true
-    segments_on_cache_traces = true
+    always_cache_traces = false
+    segments_on_cache_traces = false
 
     # Needed to cache Ray data for RayTracingMeshOutput
-    data_on_cache_traces = true
-    aux_data_on_cache_traces = true
+    data_on_cache_traces = false
+    aux_data_on_cache_traces = false
 
     # Parameters to make it work for now
     # replicated = false
@@ -162,6 +170,8 @@
 
 # To look at domain decomposition
 [AuxVariables/domains]
+  order = CONSTANT
+  family = MONOMIAL
 []
 
 [AuxKernels]
