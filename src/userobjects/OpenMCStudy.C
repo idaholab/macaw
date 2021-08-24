@@ -394,6 +394,11 @@ OpenMCStudy::postExecuteStudy()
   // Reduce all tallies, write state/source_point, run CMFD
   openmc::finalize_batch();
   openmc::mpi::n_procs = comm().size();
+
+  // Output k-effective since OpenMC output is silenced
+  _console << "Keff " << openmc::simulation::keff << " (" << openmc::simulation::keff_std
+           << ") Generation: " << openmc::simulation::keff_generation /
+           openmc::settings::n_particles;
 }
 
 void
