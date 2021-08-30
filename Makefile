@@ -28,10 +28,11 @@ HDF5_INCLUDE_DIR ?= $(HDF5_ROOT)/include
 HDF5_LIBDIR ?= $(HDF5_ROOT)/lib
 HDF5_INCLUDES := -I$(HDF5_INCLUDE_DIR) -I$(HDF5_ROOT)/include
 # BUILD_TYPE will be passed to CMake via CMAKE_BUILD_TYPE
-ifeq ($(METHOD),opt)
-	BUILD_TYPE := Release
-else
-	BUILD_TYPE := Debug
+BUILD_TYPE := Release
+ifdef METHOD
+ifneq ($(METHOD),opt)
+  BUILD_TYPE := Debug
+endif
 endif
 
 # This needs to be exported
