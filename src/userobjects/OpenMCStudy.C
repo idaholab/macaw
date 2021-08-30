@@ -397,8 +397,8 @@ OpenMCStudy::postExecuteStudy()
 
   // Output k-effective since OpenMC output is silenced
   _console << "Keff " << openmc::simulation::keff << " (" << openmc::simulation::keff_std
-           << ") Generation: " << openmc::simulation::keff_generation /
-           openmc::settings::n_particles;
+           << ") Generation: "
+           << openmc::simulation::keff_generation / openmc::settings::n_particles;
 }
 
 void

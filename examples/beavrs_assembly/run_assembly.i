@@ -73,7 +73,7 @@
 []
 
 [Outputs]
-  exodus = false
+  exodus = true
   csv = true
 []
 
@@ -131,7 +131,7 @@
 #     family = MONOMIAL
 #   []
 # []
-# 
+#
 # Plot fission rates on a coarse pin-cell mesh
 # [VectorPostprocessors]
 #   [pin_powers]
