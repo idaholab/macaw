@@ -62,15 +62,15 @@ OpenMCStudy::validParams()
 
   // Ray tracing study optimizations
   // By default, let's not verify Rays in optimized modes because it's so expensive
-#ifndef NDEBUG
-  params.set<bool>("verify_rays", false);
+#ifdef NDEBUG
+  params.set<bool>("verify_rays") = false;
 #endif
   // particles dont need to be named
   params.addPrivateParam<bool>("_use_ray_registration", false);
   // We manage banking Rays as needed on our own
-  params.set<bool>("_bank_rays_on_completion") = false;
+  params.addPrivateParam<bool>("_bank_rays_on_completion", false);
   // Subdomain setup does not depend on individual Rays in Monte Carlo
-  params.set<bool>("_ray_dependent_subdomain_setup") = false;
+  params.addPrivateParam<bool>("_ray_dependent_subdomain_setup", false);
 
   return params;
 }
