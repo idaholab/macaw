@@ -17,9 +17,13 @@ import multiprocessing
 import statistics
 import collections
 import mooseutils
+import math
+import os
 
 # Imported from Andrew's PR #18005 to MOOSE
 # Run run_openmc_csg first to get a set of xml files for OpenMC
+
+input_file = 'infinite_medium.i'
 
 # Weak  : growing problem size
 # Strong: constant problem size, run time should go down, measure speedup
@@ -46,30 +50,41 @@ def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak'
         if parallel_mode == 'openmp':
             n_threads = n_cores
             n_mpi = 1
+
+            # Export OpenMP environment variables for usually optimum binding
+            os.environ["OMP_PLACES"] = "cores"
+            os.environ["OMP_PROC_BIND"] = "close"
+
         elif parallel_mode == 'mpi':
             n_threads = 1
             n_mpi = n_cores
         else:
             raise ValueError('Unknown parallel mode', parallel_mode)
 
-        # Build command
-        cmd = ['mpiexec', '-n', str(n_mpi), exe, '-i', infile, '--n-threads='+str(n_threads),
-               'Outputs/file_base={}'.format(mode)]
+        # Build command  , '-bind-to', 'socket',
+        if parallel_mode == 'mpi':
+            cmd = ['mpiexec', '-n', str(n_mpi), exe, '-i', infile, '--n-threads='+str(n_threads),
+                   'Outputs/file_base={}'.format(mode)]
+        elif parallel_mode == 'openmp':
+            cmd = [exe, '-i', infile, '--n-threads='+str(n_threads), 'Outputs/file_base={}'.format(mode)]
 
         if scaling == 'weak':
-            scale = int(5 * n_cores**(0.333333)) / 5
-            cmd.append('Mesh/gmg/nx={}'.format(5 * scale))
-            cmd.append('Mesh/gmg/ny={}'.format(5 * scale))
-            cmd.append('Mesh/gmg/nz={}'.format(5 * scale))
+            if '3d' in input_file:
+                refinement = round(math.log(n_cores, 2.0) / 3)
+            else:
+                refinement = round(math.log(n_cores, 2.0) / 2)
+            print("Uniform refinement : ", refinement)
 
-            # Making problem size bigger does not make problem more difficult,
-            # it keeps the difficulty constant actually
-            # cmd.append('Mesh/gmg/xmin={}'.format(-5 * scale))
-            # cmd.append('Mesh/gmg/ymin={}'.format(-5 * scale))
-            # cmd.append('Mesh/gmg/zmin={}'.format(-5 * scale))
-            # cmd.append('Mesh/gmg/xmax={}'.format(5 * scale))
-            # cmd.append('Mesh/gmg/ymax={}'.format(5 * scale))
-            # cmd.append('Mesh/gmg/zmax={}'.format(5 * scale))
+            cmd.append("-r " + str(refinement))
+
+        # Use distributed mesh with mpi
+        if parallel_mode == 'mpi':
+            cmd.append('--distributed-mesh')
+            cmd.append("Transfers/active=''")  # no distributed MultiAppUserObjectTransfer
+
+        # Other optimizations
+        cmd.append('Outputs/exodus=false')
+        cmd.append("MultiApps/active=''")
 
         print(' '.join(cmd))
         out = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -158,7 +173,6 @@ def table(prefix):
 
 if __name__ == '__main__':
 
-    input_file = 'infinite_medium.i'
     args = get_args()
 
     if (not args.run or not args.write):
@@ -177,14 +191,14 @@ if __name__ == '__main__':
     # Weak scale
     if args.run:
         prefix = 'full_solve_weak_scale'
-        mpi = [2**n for n in range(1, args.weak_levels)]
+        mpi = [1, 4, 16, 56]
         samples = [args.base*m for m in mpi]
         execute(input_file, prefix, 'normal', samples, mpi, args.write)
 
     # Strong scale
     if args.run:
         prefix = 'full_solve_strong_scale'
-        mpi = [2**n for n in range(1, args.weak_levels)]
+        mpi = [1,2,4,6,8,12,16,24,32,40,52]
         samples = [args.base*m for m in mpi]
         execute(input_file, prefix, 'normal', samples, mpi, args.write, 'strong')
 
@@ -206,7 +220,7 @@ if __name__ == '__main__':
 
         plot('full_solve_weak_scale', 'efficiency',
              xname='n_cores', xlabel='Number of cores (-)',
-             yname='run_time', ylabel='Efficiency (-)')
+             yname='run_time', ylabel='Speedup (-)')
 
 
         # plot('full_solve_weak_scale', 'memory',
@@ -221,7 +235,7 @@ if __name__ == '__main__':
 
         plot('full_solve_strong_scale', 'speedup',
              xname='n_cores', xlabel='Number of cores (-)',
-             yname='run_time', ylabel='spedup (-)')
+             yname='run_time', ylabel='speedup (-)')
 
         plot('full_solve_strong_scale', 'efficiency',
              xname='n_cores', xlabel='Number of cores (-)',

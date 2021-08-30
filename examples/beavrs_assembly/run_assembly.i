@@ -1,57 +1,23 @@
+# ==============================================================================
+# GEOMETRY AND MESH
+# ==============================================================================
+
 [Mesh]
   [core]
     type = FileMeshGenerator
     file = '31enr_16_in.e'
   []
-  [boundaries1]
-    type = SideSetsAroundSubdomainGenerator
-    input = 'core'
-    block = 10016
-    normal = ' 1  0  0'
-    new_boundary = 'right '
-  []
-  [boundaries2]
-    type = SideSetsAroundSubdomainGenerator
-    input = 'boundaries1'
-    block = 10016
-    normal = '-1  0  0'
-    new_boundary = 'left'
-  []
-  [boundaries3]
-    type = SideSetsAroundSubdomainGenerator
-    input = 'boundaries2'
-    block = 10016
-    normal = '0  1  0'
-    new_boundary = 'front'
-  []
-  [boundaries4]
-    type = SideSetsAroundSubdomainGenerator
-    input = 'boundaries3'
-    block = 10016
-    normal = '0 -1  0'
-    new_boundary = 'back'
-  []
-  [boundaries5]
-    type = SideSetsAroundSubdomainGenerator
-    input = 'boundaries4'
-    block = 10016
-    normal = '0  0  1'
-    new_boundary = 'top'
-  []
-  [boundaries6]
-    type = SideSetsAroundSubdomainGenerator
-    input = 'boundaries5'
-    block = 10016
-    normal = '0  0  -1'
-    new_boundary = 'bottom'
-  []
   [shift_z]
     type = TransformGenerator
-    input = 'boundaries6'
+    input = 'core'
     transform = 'TRANSLATE'
     vector_value = '0 0 100'
   []
 []
+
+# ==============================================================================
+# SET UP OPENMC SIMULATION IN MOOSE
+# ==============================================================================
 
 [Problem]
   solve = false
@@ -62,11 +28,9 @@
 # Main things we care about for the coupling
 [AuxVariables]
   [temperature]
-    initial_condition = 300
-  []
-  [power]
     order = CONSTANT
     family = MONOMIAL
+    initial_condition = 300
   []
 []
 
@@ -95,12 +59,12 @@
     execute_on = TIMESTEP_END
 
     # Needed to cache trace information for RayTracingMeshOutput
-    always_cache_traces = true
-    segments_on_cache_traces = true
+    always_cache_traces = false
+    segments_on_cache_traces = false
 
     # Needed to cache Ray data for RayTracingMeshOutput
-    data_on_cache_traces = true
-    aux_data_on_cache_traces = true
+    data_on_cache_traces = false
+    aux_data_on_cache_traces = false
   []
 []
 
@@ -111,8 +75,93 @@
 [Outputs]
   exodus = true
   csv = true
-  perf_graph = true
 []
+
+# ==============================================================================
+# TALLIES
+# ==============================================================================
+
+# [UserObjects]
+#   inactive = 'tally univtally'
+#
+#   [tally]
+#     type = OpenMCTally
+#     particle_type = 'neutron'
+#     estimator = 'COLLISION'
+#     scores = 'flux scatter (n,fission) 16'
+#     filters = 'energy particle'
+#     energy_bins = '1e-5 1e3 2e7'
+#     execute_on = 'initial'
+#   []
+#
+#   [univtally]
+#     type = OpenMCTally
+#     particle_type = 'neutron'
+#     estimator = 'COLLISION'
+#     scores = 'kappa-fission'
+#     filters = 'universe'
+#     execute_on = 'initial'
+#   []
+#
+#   [celltally]
+#     type = OpenMCTally
+#     id = 1
+#     particle_type = 'neutron'
+#     estimator = 'COLLISION'
+#     scores = 'kappa-fission'
+#     filters = 'cell'
+#     execute_on = 'initial'
+#   []
+# []
+#
+# [AuxKernels]
+#   [cell_val]
+#     type = OpenMCTallyAux
+#     granularity = 'cell'
+#     score = 'kappa-fission'
+#     tally_id = 1
+#     execute_on = TIMESTEP_END
+#     variable = power
+#   []
+# []
+#
+# [AuxVariables]
+#   [power]
+#     order = CONSTANT
+#     family = MONOMIAL
+#   []
+# []
+#
+# Plot fission rates on a coarse pin-cell mesh
+# [VectorPostprocessors]
+#   [pin_powers]
+#     type = NearestPointIntegralVariablePostprocessor
+#     variable = 'power'
+#     block = '10010'
+#     points_file = pin_file
+#   []
+# []
+#
+# [MultiApps]
+#   [pin_mesh]
+#     type = TransientMultiApp
+#     input_files = 'output_pin.i'
+#   []
+# []
+#
+# [Transfers]
+#   [power_uo]
+#     type = MultiAppUserObjectTransfer
+#     multi_app = pin_mesh
+#     direction = 'TO_MULTIAPP'
+#     user_object = pin_powers
+#     variable = pin_power
+#   []
+# []
+
+# ==============================================================================
+# SIMULATION PERFORMANCE STUDY
+# ==============================================================================
 
 # To look at domain decomposition
 [AuxVariables/domains]
@@ -125,79 +174,7 @@
   []
 []
 
-# Tallies
-[UserObjects]
-  inactive = 'tally univtally'
-
-  [tally]
-    type = OpenMCTally
-    particle_type = 'neutron'
-    estimator = 'COLLISION'
-    scores = 'flux scatter (n,fission) 16'
-    filters = 'energy particle'
-    energy_bins = '1e-5 1e3 2e7'
-    execute_on = 'initial'
-  []
-
-  [univtally]
-    type = OpenMCTally
-    particle_type = 'neutron'
-    estimator = 'COLLISION'
-    scores = 'kappa-fission'
-    filters = 'universe'
-    execute_on = 'initial'
-  []
-
-  [celltally]
-    type = OpenMCTally
-    id = 1
-    particle_type = 'neutron'
-    estimator = 'COLLISION'
-    scores = 'kappa-fission'
-    filters = 'cell'
-    execute_on = 'initial'
-  []
-[]
-
-[AuxKernels]
-  [cell_val]
-    type = OpenMCTallyAux
-    granularity = 'cell'
-    score = 'kappa-fission'
-    tally_id = 1
-    execute_on = TIMESTEP_END
-    variable = power
-  []
-[]
-
-# Plot fission rates on a coarse pin-cell mesh
-[VectorPostprocessors]
-  [pin_powers]
-    type = NearestPointIntegralVariablePostprocessor
-    variable = 'power'
-    block = '10010'
-    points_file = pin_file
-  []
-[]
-
-[MultiApps]
-  [pin_mesh]
-    type = TransientMultiApp
-    input_files = 'output_pin.i'
-  []
-[]
-
-[Transfers]
-  [power_uo]
-    type = MultiAppUserObjectTransfer
-    multi_app = pin_mesh
-    direction = 'TO_MULTIAPP'
-    user_object = pin_powers
-    variable = pin_power
-  []
-[]
-
-# To measure performance
+# Performance metrics
 [Postprocessors]
   [total_mem]
     type = MemoryUsage

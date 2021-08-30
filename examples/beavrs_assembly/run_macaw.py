@@ -17,10 +17,15 @@ import multiprocessing
 import statistics
 import collections
 import mooseutils
+import numpy as np
+import math
 import os
 
 # Imported from Andrew's PR #18005 to MOOSE
 # Run run_openmc_csg first to get a set of xml files for OpenMC
+
+input_file = 'run_assembly_3d.i'
+pre_split_mesh = True
 
 # Weak  : growing problem size
 # Strong: constant problem size, run time should go down, measure speedup
@@ -34,6 +39,7 @@ def get_args():
     parser.add_argument('--memory-cores', default=28, type=int, help="Number of processors to use for memory/timing runs.")
     parser.add_argument('--memory-threads', default=28, type=int, help="Number of processors to use for memory/timing runs.")
     parser.add_argument('--weak-levels', default=7, type=int, help="Number of processor levels to perform for weak scaling, n in [2^0,...,2^n-1].")
+
     parser.add_argument('--write', action='store_true', help="Toggle writing to results directory")
     return parser.parse_args()
 
@@ -41,12 +47,36 @@ def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak'
     data = collections.defaultdict(list)
     if mpi is None: mpi = [1]*len(samples)
     exe = mooseutils.find_moose_executable_recursive()
+
+    # Pre-split the mesh if required and it has not been done already
+    if parallel_mode == 'mpi' and pre_split_mesh:
+        all_splits_exist = True
+        for i in mpi:
+            folder_name = scaling + '_' + input_file.split(".i")[0] + '.cpr/' + str(i)
+            if not os.path.exists(folder_name):
+                all_splits_exist = False
+
+        if not all_splits_exist:
+            mpi_str = ''
+            for i in mpi:
+                mpi_str += str(i) + ','
+            subprocess.run(['mpiexec', '-n', str(4), exe, '-i', infile, '--split-mesh', mpi_str[:-1],
+                            '--split-file', folder_name.split('/')[0]])
+        else:
+            print("All splits have already been generated")
+
+    # Run the code for every sample and configuration
     for n_cores, n_samples in zip(mpi, samples):
 
-        # Select parallelism type
+        # Select configuration based on parallelism type
         if parallel_mode == 'openmp':
             n_threads = n_cores
             n_mpi = 1
+
+            # Export OpenMP environment variables for usually optimum binding
+            os.environ["OMP_PLACES"] = "cores"
+            os.environ["OMP_PROC_BIND"] = "close"
+
         elif parallel_mode == 'mpi':
             n_threads = 1
             n_mpi = n_cores
@@ -54,26 +84,38 @@ def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak'
             raise ValueError('Unknown parallel mode', parallel_mode)
 
         # Build command
-        cmd = ['mpiexec', '-n', str(n_mpi), exe, '-i', infile, '--n-threads='+str(n_threads),
-               'Outputs/file_base={}'.format(mode)]
+        if parallel_mode == 'mpi':
+            cmd = ['mpiexec', '-n', str(n_mpi), exe, '-i', infile, '--n-threads='+str(n_threads),
+                   'Outputs/file_base={}'.format(mode)]
+        elif parallel_mode == 'openmp':
+            cmd = [exe, '-i', infile, '--n-threads='+str(n_threads), 'Outputs/file_base={}'.format(mode)]
 
         if scaling == 'weak':
-            scale = int(5 * n_cores**(0.333333)) / 5
-            cmd.append('Mesh/gmg/nx={}'.format(5 * scale))
-            cmd.append('Mesh/gmg/ny={}'.format(5 * scale))
-            cmd.append('Mesh/gmg/nz={}'.format(5 * scale))
+            if '3d' in input_file:
+                refinement = round(math.log(n_cores, 2.0) / 3)
+            else:
+                refinement = round(math.log(n_cores, 2.0) / 2)
+            print("Uniform refinement : ", refinement)
 
-            # Making problem size bigger does not make problem more difficult,
-            # it keeps the difficulty constant actually
-            cmd.append('Mesh/gmg/xmin={}'.format(-5 * scale))
-            cmd.append('Mesh/gmg/ymin={}'.format(-5 * scale))
-            cmd.append('Mesh/gmg/zmin={}'.format(-5 * scale))
-            cmd.append('Mesh/gmg/xmax={}'.format(5 * scale))
-            cmd.append('Mesh/gmg/ymax={}'.format(5 * scale))
-            cmd.append('Mesh/gmg/zmax={}'.format(5 * scale))
+            cmd.append("-r " + str(refinement))
+
+        # Use distributed mesh with mpi
+        if parallel_mode == 'mpi':
+            cmd.append("Transfers/active=''")  # no distributed MultiAppUserObjectTransfer
+
+            if pre_split_mesh:
+                cmd.append('--use-split')
+                cmd.append('--split-file')
+                cmd.append(scaling + '_' + input_file.split(".i")[0])
+            else:
+                cmd.append('--distributed-mesh')  # much slower
+
+        # Other optimizations
+        cmd.append('Outputs/exodus=false')
+        cmd.append("MultiApps/active=''")
 
         print(' '.join(cmd))
-        out = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        out = subprocess.run(cmd) #, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         local = pandas.read_csv('{}.csv'.format(mode))
         data['n_cores'].append(n_cores)
@@ -91,7 +133,7 @@ def execute(infile, outfile, mode, samples, mpi=None, write=True, scaling='weak'
             df.to_csv('results/{}_{}.csv'.format(outfile, mode))
 
 
-def plot(prefix, suffix, xname, yname, xlabel=None, ylabel=None, yerr=None, results=True):
+def plot(prefix, suffix, xname, yname, xlabel=None, ylabel=None, yerr=None, results=True, scaling='strong'):
 
     fig = plt.figure(figsize=[4,4], dpi=300, tight_layout=True)
     ax = fig.subplots()
@@ -113,6 +155,9 @@ def plot(prefix, suffix, xname, yname, xlabel=None, ylabel=None, yerr=None, resu
         # Adapt for efficiency
         if (suffix == 'efficiency' or suffix == 'speedup'):
             data[yname] = data[yname][0] / data[yname]
+            if scaling == 'weak':
+                data[yname] /= data['n_cores']
+
         ax.errorbar(data[xname], data[yname], **kwargs)
 
     if xlabel is not None:
@@ -159,60 +204,44 @@ def table(prefix):
 
 if __name__ == '__main__':
 
-    input_file = 'run_assembly.i'
     args = get_args()
 
     if (not args.run or not args.write):
         print("\nAre you missing the run and write flags on purpose?\n")
     else:
-        # Save old plots
+        # Save old plots and old results
         os.system("mv *pdf results/")
+        os.system("mv *csv results/")
 
-    # Memory Parallel
-    # if args.run:
-    #     prefix = 'full_solve_memory_parallel'
-    #     samples = [args.base*2**n for n in range(args.memory_levels)]
-    #     mpi = [args.memory_cores]*len(samples)
-    #     execute(input_file, prefix, 'normal', samples, mpi, args.replicates, args.write)
+    # Weak scale runs
+    if args.run:
+        prefix = 'full_solve_weak_scale'
+        mpi = [1, 4, 16, 56]
+        if '3d' in input_file:
+            mpi = [1, 8, 56]
+        samples = [args.base*m for m in mpi]
+        execute(input_file, prefix, 'normal', samples, mpi, args.write)
 
-    # Weak scale
-    # if args.run:
-    #     prefix = 'full_solve_weak_scale'
-    #     mpi = [2**n for n in range(1, args.weak_levels)]
-    #     samples = [args.base*m for m in mpi]
-    #     execute(input_file, prefix, 'normal', samples, mpi, args.write)
-
-    # Strong scale
+    # Strong scale runs
     if args.run:
         prefix = 'full_solve_strong_scale'
-        mpi = [2**n for n in range(0, args.weak_levels)]
+        mpi = [1,2,4,6,8,12,16,24,32,40,52]
         samples = [args.base*m for m in mpi]
         execute(input_file, prefix, 'normal', samples, mpi, args.write, 'strong')
 
-    # Parallel time and memory plots
-    # if False:
-    #     plot('full_solve_memory_parallel', 'time',
-    #          xname='n_samples', xlabel='Number of Simulations',
-    #          yname='run_time', ylabel='Time (sec.)', yerr=('run_time_min', 'run_time_max'))
-    #
-    #     plot('full_solve_memory_parallel', 'memory',
-    #          xname='n_samples', xlabel='Number of Simulations',
-    #          yname='mem_per_proc', ylabel='Memory (MiB)')
-
     # Weak scaling plots
-    # if True:
-    #     plot('full_solve_weak_scale', 'time',
-    #          xname='n_cores', xlabel='Number of cores (-)',
-    #          yname='run_time', ylabel='Time (sec.)', yerr=('run_time_min', 'run_time_max'))
-    #
-    #     plot('full_solve_weak_scale', 'efficiency',
-    #          xname='n_cores', xlabel='Number of cores (-)',
-    #          yname='run_time', ylabel='Efficiency (-)')
+    if True:
+        plot('full_solve_weak_scale', 'time',
+             xname='n_cores', xlabel='Number of cores (-)',
+             yname='run_time', ylabel='Time (sec.)', yerr=('run_time_min', 'run_time_max'))
 
+        plot('full_solve_weak_scale', 'efficiency',
+             xname='n_cores', xlabel='Number of cores (-)',
+             yname='run_time', ylabel='Efficiency (-)', scaling='weak')
 
-        # plot('full_solve_weak_scale', 'memory',
-        #      xname='n_cores', xlabel='Number of cores (-)',
-        #      yname='mem_per_proc', ylabel='Memory (MiB)')
+        plot('full_solve_weak_scale', 'memory',
+             xname='n_cores', xlabel='Number of cores (-)',
+             yname='mem_per_proc', ylabel='Memory (MiB)')
 
     # Strong scaling plots
     if True:
@@ -222,12 +251,12 @@ if __name__ == '__main__':
 
         plot('full_solve_strong_scale', 'speedup',
              xname='n_cores', xlabel='Number of cores (-)',
-             yname='run_time', ylabel='spedup (-)')
+             yname='run_time', ylabel='speedup (-)')
 
         plot('full_solve_strong_scale', 'efficiency',
              xname='n_cores', xlabel='Number of cores (-)',
              yname='run_time*size', ylabel='Efficiency (-)')
 
-        # plot('full_solve_strong_scale', 'memory',
-        #      xname='n_cores', xlabel='Number of cores (-)',
-        #      yname='mem_per_proc', ylabel='Memory (MiB)')
+        plot('full_solve_strong_scale', 'memory',
+             xname='n_cores', xlabel='Number of cores (-)',
+             yname='mem_per_proc', ylabel='Memory (MiB)')

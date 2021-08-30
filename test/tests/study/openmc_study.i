@@ -30,9 +30,13 @@
 
 # Main things we care about for the coupling
 [Variables/temperature]
+    order = CONSTANT
+    family = MONOMIAL
 []
 
 [AuxVariables/power]
+    order = CONSTANT
+    family = MONOMIAL
 []
 
 [RayKernels/collision]

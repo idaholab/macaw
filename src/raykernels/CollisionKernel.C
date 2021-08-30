@@ -50,8 +50,11 @@ CollisionKernel::CollisionKernel(const InputParameters & params)
 {
   // Check that the temperature variable is a constant monomial
   // TODO check properly
-  if (getFieldVar("temperature", 0)->order() != 1)
-    paramError("temperature", "Only CONST MONOMIAL temperatures are currently supported.");
+  if (getFieldVar("temperature", 0) && getFieldVar("temperature", 0)->order() != 0)
+    paramError("temperature",
+               "Only CONST MONOMIAL temperatures (current order: ",
+               getFieldVar("temperature", 0)->order(),
+               ") are supported.");
 
   // Check for 2D parameters
   if (_is_2D && !params.isParamSetByUser("z_coord"))

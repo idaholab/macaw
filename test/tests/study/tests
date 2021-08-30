@@ -6,5 +6,9 @@
     requirement = 'The system shall be able to wrap an OpenMC simulation and interface OpenMC with the ray tracing module.'
     design = 'OpenMCStudy.md'
     issues = '#4'
+    # ray tracks have extra points at crossings
+    max_parallel = 1
+    # ray ids are different with threads
+    max_threads = 1
   []
 []

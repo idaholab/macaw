@@ -1,3 +1,7 @@
+# ==============================================================================
+# GEOMETRY AND MESH
+# ==============================================================================
+
 [Mesh]
   [core]
     type = FileMeshGenerator
@@ -51,7 +55,31 @@
     transform = 'TRANSLATE'
     vector_value = '0 0 100'
   []
+
+  [Partitioner]
+    type = HierarchicalGridPartitioner
+    nx_nodes = 2
+    ny_nodes = 2
+    nz_nodes = 1
+
+    # 48 processors per node on sawtooth
+    nx_procs = 2
+    ny_procs = 1
+    nz_procs = 1
+  []
+
+  # Shared memory run
+  # [Partitioner]
+  #    type = GridPartitioner
+  #    nx = 4
+  #    ny = 1
+  #    nz = 1
+  #  []
 []
+
+# ==============================================================================
+# SET UP OPENMC SIMULATION IN MOOSE
+# ==============================================================================
 
 [Problem]
   solve = false
@@ -62,6 +90,8 @@
 # Main things we care about for the coupling
 [AuxVariables]
   [temperature]
+    order = CONSTANT
+    family = MONOMIAL
     initial_condition = 300
   []
   [power]
@@ -95,26 +125,40 @@
 []
 
 [UserObjects]
-  # inactive = 'tally univtally'
-
   [study]
     type = OpenMCStudy
 
     execute_on = TIMESTEP_END
 
     # Needed to cache trace information for RayTracingMeshOutput
-    always_cache_traces = true
-    segments_on_cache_traces = true
+    always_cache_traces = false
+    segments_on_cache_traces = false
 
     # Needed to cache Ray data for RayTracingMeshOutput
-    data_on_cache_traces = true
-    aux_data_on_cache_traces = true
+    data_on_cache_traces = false
+    aux_data_on_cache_traces = false
 
     # Parameters to make it work for now
-    # replicated = false
     tolerate_failure = true
   []
+[]
 
+[Executioner]
+  type = Transient
+[]
+
+[Outputs]
+  exodus = true
+  csv = true
+  perf_graph = true
+[]
+
+
+# ==============================================================================
+# TALLIES
+# ==============================================================================
+
+[UserObjects]
   [tally]
     type = OpenMCTally
     id = 3
@@ -150,45 +194,17 @@
   []
 []
 
-[Executioner]
-  type = Transient
-[]
-
-[Outputs]
-  exodus = false
-  csv = true
-  perf_graph = true
-[]
-
-# To look at domain decomposition
-[AuxVariables/domains]
-[]
-
 [AuxKernels]
-  [domains]
-    type = ProcessorIDAux
-    variable = domains
-  []
-
-  # [cell_val]
-  #   type = OpenMCTallyAux
-  #   tally_id = 6
-  #   execute_on = TIMESTEP_END
-  #   variable = power
-  # []
-[]
-
-[VectorPostprocessors]
-  [mem]
-    type = VectorMemoryUsage
-    execute_on = 'INITIAL TIMESTEP_END'
-    report_peak_value = true
-    mem_units = megabytes
+  [cell_val]
+    type = OpenMCTallyAux
+    tally_id = 6
+    execute_on = TIMESTEP_END
+    variable = power
   []
 []
 
 # Output on a pincell mesh
-[UserObjects]
+[VectorPostprocessors]
   [pin_powers]
     type = NearestPointIntegralVariablePostprocessor
     variable = 'power'
@@ -213,5 +229,31 @@
     user_object = pin_powers
     variable = pin_power
     execute_on = TIMESTEP_END
+  []
+[]
+
+# ==============================================================================
+# SIMULATION PERFORMANCE STUDY
+# ==============================================================================
+
+# To look at domain decomposition
+[AuxVariables/domains]
+  order = CONSTANT
+  family = MONOMIAL
+[]
+
+[AuxKernels]
+  [domains]
+    type = ProcessorIDAux
+    variable = domains
+  []
+[]
+
+[VectorPostprocessors]
+  [mem]
+    type = VectorMemoryUsage
+    execute_on = 'INITIAL TIMESTEP_END'
+    report_peak_value = true
+    mem_units = megabytes
   []
 []
