@@ -16,16 +16,26 @@
   [extrude]
     type = FancyExtruderGenerator
     input = 'translate'
-    heights = '20 15 1.748 0.4141 3.3579 57.505 5.715 46.482 5.715 46.482 5.715 46.482 5.715 46.482 5.715 46.482 5.715 37.783 9.298 3.358 2 2.54 3.345 8.827 28.124'
+    num_layers = '4'
+    heights = '400'
+    # heights = '20 15 1.748 0.4141 3.3579 57.505 5.715 46.482 5.715 46.482 5.715 46.482 5.715 46.482 5.715 46.482 5.715 37.783 9.298 3.358 2 2.54 3.345 8.827 28.124'
     # num_layers = '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'  # 25 zones
     # num_layers = '2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2'  # 50 zones
-    num_layers = '4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4'  # 100 zones
+    # num_layers = '4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4'  # 100 zones
     # num_layers = '5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5'  # 125 zones
     # num_layers = '10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10'  # 250 zones
     direction = '0 0 1'
     bottom_boundary = '8'
     top_boundary = '9'
   []
+
+  # Shared memory run
+  # [Partitioner]
+  #    type = GridPartitioner
+  #    nx = 1
+  #    ny = 1
+  #    nz = 4
+  #  []
 []
 
 # ==============================================================================
@@ -63,12 +73,13 @@
 [RayBCs]
   [lattice_reflect]
     type = ReflectRayBC
-    boundary = '1 2 3 4'
+    boundary = '1 2 3 4 8 9'
+    warn_non_planar = false
   []
-  [axial_water]
-    type = KillRayBC
-    boundary = '8 9'
-  []
+  # [axial_water]
+  #   type = KillRayBC
+  #   boundary = '8 9'
+  # []
 []
 
 [UserObjects]
@@ -99,7 +110,7 @@
 []
 
 [Outputs]
-  exodus = false
+  exodus = true
   csv = true
   perf_graph = false
 []
@@ -108,55 +119,55 @@
 # TALLIES
 # ==============================================================================
 
-# [UserObjects]
-#   inactive = 'tally univtally'
-#   [tally]
-#     type = OpenMCTally
-#     particle_type = 'neutron'
-#     estimator = 'COLLISION'
-#     scores = 'flux scatter (n,fission) 16'
-#     filters = 'energy particle'
-#     energy_bins = '1e-5 1e3 2e7'
-#     execute_on = 'initial'
-#   []
-#
-#   [univtally]
-#     type = OpenMCTally
-#     particle_type = 'neutron'
-#     estimator = 'COLLISION'
-#     scores = 'kappa-fission'
-#     filters = 'universe'
-#     execute_on = 'initial'
-#   []
-#
-#   [celltally]
-#     type = OpenMCTally
-#     id = 1
-#     particle_type = 'neutron'
-#     estimator = 'COLLISION'
-#     scores = 'kappa-fission'
-#     filters = 'cell'
-#     execute_on = 'initial'
-#   []
-# []
-#
-# [AuxVariables]
-#   [power]
-#     order = CONSTANT
-#     family = MONOMIAL
-#   []
-# []
-#
-# [AuxKernels]
-#   [cell_val]
-#     type = OpenMCTallyAux
-#     granularity = 'cell'
-#     score = 'kappa-fission'
-#     tally_id = 1
-#     execute_on = TIMESTEP_END
-#     variable = power
-#   []
-# []
+[UserObjects]
+  inactive = 'tally univtally'
+  [tally]
+    type = OpenMCTally
+    particle_type = 'neutron'
+    estimator = 'COLLISION'
+    scores = 'flux scatter (n,fission) 16'
+    filters = 'energy particle'
+    energy_bins = '1e-5 1e3 2e7'
+    execute_on = 'initial'
+  []
+
+  [univtally]
+    type = OpenMCTally
+    particle_type = 'neutron'
+    estimator = 'COLLISION'
+    scores = 'kappa-fission'
+    filters = 'universe'
+    execute_on = 'initial'
+  []
+
+  [celltally]
+    type = OpenMCTally
+    id = 1
+    particle_type = 'neutron'
+    estimator = 'COLLISION'
+    scores = 'kappa-fission'
+    filters = 'cell'
+    execute_on = 'initial'
+  []
+[]
+
+[AuxVariables]
+  [power]
+    order = CONSTANT
+    family = MONOMIAL
+  []
+[]
+
+[AuxKernels]
+  [cell_val]
+    type = OpenMCTallyAux
+    granularity = 'cell'
+    score = 'kappa-fission'
+    tally_id = 1
+    execute_on = TIMESTEP_END
+    variable = power
+  []
+[]
 
 # [MultiApps]
 #   [pin_mesh]
@@ -191,12 +202,56 @@
 #   []
 # []
 
-# To tally reaction rates on a pincell mesh
-# [VectorPostprocessors]
-#   [pin_powers]
-#     type = NearestPointIntegralVariablePostprocessor
-#     variable = 'power'
-#     block = '10010'
-#     points_file = pin_file
-#   []
-# []
+# Performance metrics
+[Postprocessors]
+  [total_mem]
+    type = MemoryUsage
+    execute_on = 'INITIAL TIMESTEP_END'
+  []
+  [per_proc]
+    type = MemoryUsage
+    value_type = "average"
+    execute_on = 'INITIAL TIMESTEP_END'
+  []
+  [max_proc]
+    type = MemoryUsage
+    value_type = "max_process"
+    execute_on = 'INITIAL TIMESTEP_END'
+  []
+  [total_time]
+    type = PerfGraphData
+    execute_on = 'INITIAL TIMESTEP_END'
+    data_type = 'TOTAL'
+    section_name = 'Root'
+  []
+  [run_time]
+    type = ChangeOverTimePostprocessor
+    postprocessor = total_time
+    execute_on = 'INITIAL TIMESTEP_END'
+  []
+
+  # Particles per second to compare to openmc
+  [num_rays]
+    type = VectorPostprocessorComponent
+    vectorpostprocessor = per_proc_ray_tracing
+    index = 0
+    vector_name = rays_traced
+  []
+  [total_num_rays]
+    type = CumulativeValuePostprocessor
+    postprocessor = num_rays
+  []
+  [particles_per_s]
+    type = ParsedPostprocessor
+    pp_names = 'total_num_rays total_time'
+    function = 'total_num_rays / total_time'
+  []
+[]
+
+[VectorPostprocessors]
+  [per_proc_ray_tracing]
+    type = PerProcessorRayTracingResultsVectorPostprocessor
+    execute_on = TIMESTEP_END
+    study = study
+  []
+[]

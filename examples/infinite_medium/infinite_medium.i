@@ -24,12 +24,13 @@
 
 [Problem]
   solve = false
-
   kernel_coverage_check = false
 []
 
 # Main things we care about for the coupling
 [Variables/temperature]
+  order = CONSTANT
+  family = MONOMIAL
   initial_condition = 300
 []
 
@@ -62,12 +63,12 @@
   execute_on = TIMESTEP_END
 
   # Needed to cache trace information for RayTracingMeshOutput
-  always_cache_traces = true
-  segments_on_cache_traces = true
+  always_cache_traces = false
+  segments_on_cache_traces = false
 
   # Needed to cache Ray data for RayTracingMeshOutput
-  data_on_cache_traces = true
-  aux_data_on_cache_traces = true
+  data_on_cache_traces = false
+  aux_data_on_cache_traces = false
 []
 
 [Executioner]
@@ -77,17 +78,6 @@
 [Outputs]
   exodus = false
   csv = true
-
-  hide = 'num_rays'
-
-  [rays]
-    type = RayTracingExodus
-    study = study
-    output_data = true # enable for data output
-    # output_data_nodal = true # enable for nodal data output
-    output_aux_data = true
-    execute_on = final
-  []
 []
 
 # To look at domain decomposition
